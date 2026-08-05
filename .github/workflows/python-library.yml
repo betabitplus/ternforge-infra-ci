@@ -80,6 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           uv run --no-sync lint-imports
+          # shellcheck disable=SC2153 # Supplied by the workflow step environment.
           read -r -a policy_command <<<"$POLICY_COMMAND"
           uv run --no-sync "${policy_command[@]}"
 
