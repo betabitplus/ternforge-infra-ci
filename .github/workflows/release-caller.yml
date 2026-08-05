@@ -1,4 +1,4 @@
-name: release bootstrap
+name: release
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    uses: ./.github/workflows/release.yml
+    uses: betabitplus/ternforge-infra-ci/.github/workflows/release.yml@6735b5e202d5d41cb726b02ebc89e3e36f1d1207 # v1.0.0
     with:
       app-client-id: ${{ vars.TERNFORGE_RELEASE_CLIENT_ID }}
       repository: ${{ github.event.repository.name }}

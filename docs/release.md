@@ -31,16 +31,16 @@ environment. Consequently an environment secret cannot be passed into
 `workflow_call`; the private key is stored as one named repository secret while
 the manual merge of the Release PR remains the release decision.
 
-## First-release bootstrap
+## Released self caller
 
-The first release temporarily uses `.github/workflows/release-bootstrap.yml`,
-which calls the reusable workflow from the same commit. After `v0.1.0` exists,
-the bootstrap caller is deleted and replaced by a permanent caller pinned to the
-full commit SHA behind the released tag with a human-readable tag comment.
+The first release used a temporary same-commit bootstrap caller. That caller was
+removed immediately after `v1.0.0`. The permanent
+`.github/workflows/release-caller.yml` now pins the reusable release workflow to
+the full commit SHA behind `v1.0.0` with a human-readable tag comment.
 
-The task is not complete until a second release succeeds through the permanent
-exact-SHA caller and no bootstrap workflow, branch, credential, or tag exception
-remains.
+A release caller update is always a normal reviewed pull request. Existing
+callers never follow a moving branch or tag, and no bootstrap workflow, branch,
+credential, or tag exception remains.
 
 ## Release behavior
 
