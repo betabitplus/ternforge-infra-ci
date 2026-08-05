@@ -19,17 +19,19 @@ pull requests: write
 metadata: read (mandatory)
 ```
 
-The caller passes the App Client ID through the
-`TERNFORGE_RELEASE_CLIENT_ID` repository variable and one explicitly named
-`TERNFORGE_RELEASE_PRIVATE_KEY` repository secret. `secrets: inherit` is not
-used. Every invocation mints a short-lived token restricted to the current
-repository and verifies that the installation token sees exactly that one
-repository before Release Please runs.
+The caller passes only the App Client ID through the
+`TERNFORGE_RELEASE_CLIENT_ID` repository variable. The reusable release job
+binds itself to the caller repository's protected `release` environment and
+reads one explicitly named `TERNFORGE_RELEASE_PRIVATE_KEY` environment secret.
+The caller has no `secrets` block and `secrets: inherit` is not used.
 
-GitHub does not allow a caller job that uses a reusable workflow to target an
-environment. Consequently an environment secret cannot be passed into
-`workflow_call`; the private key is stored as one named repository secret while
-the manual merge of the Release PR remains the release decision.
+The `release` environment requires owner review and permits protected branches
+only. Approval occurs before the private key is exposed to the job. Every
+approved invocation mints a short-lived token restricted to the current
+repository and verifies that the installation token sees exactly that one
+repository before Release Please runs. GitHub does not allow the caller job
+itself to declare `environment`, so the environment binding intentionally lives
+inside the called reusable workflow.
 
 ## Released self caller
 
