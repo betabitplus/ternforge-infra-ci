@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.2.0...v1.3.0) (2026-08-05)
+
+
+### Features
+
+* finalize protected release caller ([#15](https://github.com/betabitplus/ternforge-infra-ci/issues/15)) ([62bcdf3](https://github.com/betabitplus/ternforge-infra-ci/commit/62bcdf3fddd1f3956003d5976763ff47772abb74))
+
+
+### Bug Fixes
+
+* keep explicit release secret with environment gate ([#16](https://github.com/betabitplus/ternforge-infra-ci/issues/16)) ([4e206c2](https://github.com/betabitplus/ternforge-infra-ci/commit/4e206c27c2b230de7c1810d6c5a0a9096289e449))
+
 ## [1.2.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.1.1...v1.2.0) (2026-08-05)
 
 
