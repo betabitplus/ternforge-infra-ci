@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.0.0...v1.1.0) (2026-08-05)
+
+
+### Features
+
+* adopt released exact-SHA caller ([#8](https://github.com/betabitplus/ternforge-infra-ci/issues/8)) ([8207788](https://github.com/betabitplus/ternforge-infra-ci/commit/820778898d67ee4c929fd30fe02e32a993b94992))
+
 ## 1.0.0 (2026-08-05)
 
 
