@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.1.0...v1.1.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* use protected release environment ([#10](https://github.com/betabitplus/ternforge-infra-ci/issues/10)) ([bbf9145](https://github.com/betabitplus/ternforge-infra-ci/commit/bbf91454fbb193dbbd68d83bc3dd1f0632c96947))
+
 ## [1.1.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.0.0...v1.1.0) (2026-08-05)
 
 
