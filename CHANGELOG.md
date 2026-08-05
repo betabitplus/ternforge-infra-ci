@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.3.0...v1.4.0) (2026-08-05)
+
+
+### Features
+
+* pin final protected release caller ([#18](https://github.com/betabitplus/ternforge-infra-ci/issues/18)) ([39a9448](https://github.com/betabitplus/ternforge-infra-ci/commit/39a94484c96d2a64d31bd2fbb00c4a735bb299f7))
+
 ## [1.3.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.2.0...v1.3.0) (2026-08-05)
 
 
