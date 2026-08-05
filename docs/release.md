@@ -19,27 +19,31 @@ pull requests: write
 metadata: read (mandatory)
 ```
 
-The caller passes only the App Client ID through the
-`TERNFORGE_RELEASE_CLIENT_ID` repository variable. The reusable release job
-binds itself to the caller repository's protected `release` environment and
-reads one explicitly named `TERNFORGE_RELEASE_PRIVATE_KEY` environment secret.
-The caller has no `secrets` block and `secrets: inherit` is not used.
+The caller passes the App Client ID through the
+`TERNFORGE_RELEASE_CLIENT_ID` repository variable and one explicitly named
+`TERNFORGE_RELEASE_PRIVATE_KEY` repository secret. `secrets: inherit` is not
+used. The reusable release job binds itself to the caller repository's protected
+`release` environment.
 
 The `release` environment requires owner review and permits protected branches
-only. Approval occurs before the private key is exposed to the job. Every
-approved invocation mints a short-lived token restricted to the current
-repository and verifies that the installation token sees exactly that one
-repository before Release Please runs. GitHub does not allow the caller job
-itself to declare `environment`, so the environment binding intentionally lives
-inside the called reusable workflow.
+only. Approval occurs before the runner receives the explicitly passed private
+key. Every approved invocation mints a short-lived token restricted to the
+current repository and verifies that the installation token sees exactly that
+one repository before Release Please runs.
+
+GitHub documents environment-secret replacement in reusable workflows, but two
+real exact-SHA self-calls exposed an empty secret despite a valid environment
+secret and successful approval. The accepted contract therefore keeps the
+environment approval gate and uses one explicit named repository secret instead
+of relying on that runtime replacement behavior.
 
 ## Released self caller
 
 The first release used a temporary same-commit bootstrap caller. That caller was
-removed immediately after `v1.0.0`. The permanent
-`.github/workflows/release-caller.yml` pins the protected-environment reusable
-workflow to the full commit SHA behind `v1.2.0` with a human-readable tag
-comment and passes no secrets.
+removed immediately after `v1.0.0`. During this final compatibility repair the
+caller temporarily pins the last working `v1.1.0` workflow only to publish the
+corrected protected-environment interface. The next reviewed caller update must
+pin the corrected release by full SHA.
 
 A release caller update is always a normal reviewed pull request. Existing
 callers never follow a moving branch or tag, and no bootstrap workflow, branch,
