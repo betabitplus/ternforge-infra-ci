@@ -37,8 +37,9 @@ inside the called reusable workflow.
 
 The first release used a temporary same-commit bootstrap caller. That caller was
 removed immediately after `v1.0.0`. The permanent
-`.github/workflows/release-caller.yml` now pins the reusable release workflow to
-the full commit SHA behind `v1.0.0` with a human-readable tag comment.
+`.github/workflows/release-caller.yml` now pins the environment-aware reusable
+release workflow to the full commit SHA behind `v1.1.1` with a human-readable
+tag comment.
 
 A release caller update is always a normal reviewed pull request. Existing
 callers never follow a moving branch or tag, and no bootstrap workflow, branch,
