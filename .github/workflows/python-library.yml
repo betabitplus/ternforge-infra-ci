@@ -1,0 +1,158 @@
+name: reusable python library ci
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version used by the locked project environment.
+        required: false
+        type: string
+        default: "3.12"
+      policy-command:
+        description: Direct Ternforge policy command supplied by the generated product.
+        required: false
+        type: string
+        default: "ternforge-policy check"
+      runtime-audit-exclude-package:
+        description: Optional unhashed internal VCS project excluded from the frozen runtime export.
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  PYTEST_XDIST_AUTO_NUM_WORKERS: "2"
+
+jobs:
+  required:
+    name: required
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate pull request title
+        if: github.event_name == 'pull_request'
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            test
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version-file: pyproject.toml
+
+      - name: Synchronize the locked environment once
+        run: uv sync --locked --all-groups --python "${{ inputs.python-version }}"
+
+      - name: Ruff lint
+        run: uv run --no-sync ruff check .
+
+      - name: Ruff format
+        run: uv run --no-sync ruff format --check .
+
+      - name: Type checks
+        run: |
+          set -euo pipefail
+          uv run --no-sync ty check
+          uv run --no-sync pyright
+
+      - name: Import and Ternforge policy
+        env:
+          POLICY_COMMAND: ${{ inputs.policy-command }}
+        run: |
+          set -euo pipefail
+          uv run --no-sync lint-imports
+          read -r -a policy_command <<<"$POLICY_COMMAND"
+          uv run --no-sync "${policy_command[@]}"
+
+      - name: Complexity, security, documentation, and dependency checks
+        run: |
+          set -euo pipefail
+          uv run --no-sync flake8 .
+          uv run --no-sync radon cc --show-complexity --min C src tests
+          uv run --no-sync radon mi --show --min B src
+          uv run --no-sync bandit --recursive src
+          uv run --no-sync interrogate --fail-under 100 src
+          uv run --no-sync deptry .
+
+      - name: Test
+        run: uv run --no-sync pytest
+
+      - name: Audit frozen runtime dependencies
+        env:
+          EXCLUDE_PACKAGE: ${{ inputs.runtime-audit-exclude-package }}
+        run: |
+          set -euo pipefail
+          requirements="$RUNNER_TEMP/runtime-requirements.txt"
+          export_args=(--frozen --no-dev --no-emit-project --output-file "$requirements")
+          if [[ -n "$EXCLUDE_PACKAGE" ]]; then
+            export_args+=(--no-emit-package "$EXCLUDE_PACKAGE")
+          fi
+          uv export "${export_args[@]}"
+          uv run --frozen --no-sync pip-audit \
+            --requirement "$requirements" \
+            --no-deps \
+            --disable-pip
+
+      - name: Build and inspect distributions
+        run: |
+          set -euo pipefail
+          rm -rf build dist
+          uv run --no-sync python -m build
+          uv run --no-sync twine check dist/*
+          uv run --no-sync check-wheel-contents dist/*.whl
+          uv run --no-sync check-manifest
+
+      - name: Install and import wheel and source distribution in isolation
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
+        run: |
+          set -euo pipefail
+          project_name="$(uv run --no-sync python - <<'PY'
+          import pathlib
+          import tomllib
+
+          data = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
+          print(data['project']['name'])
+          PY
+          )"
+          for artifact in dist/*.whl dist/*.tar.gz; do
+            environment="$RUNNER_TEMP/$(basename "$artifact" | tr '.-' '__')"
+            uv venv --python "$PYTHON_VERSION" "$environment"
+            uv pip install --python "$environment/bin/python" "$artifact"
+            "$environment/bin/python" - "$project_name" <<'PY'
+          import importlib
+          import importlib.metadata
+          import sys
+
+          project_name = sys.argv[1].lower().replace('_', '-')
+          candidates = sorted(
+              package
+              for package, distributions in importlib.metadata.packages_distributions().items()
+              if any(item.lower().replace('_', '-') == project_name for item in distributions)
+          )
+          if not candidates:
+              raise SystemExit(f'no import package found for {project_name}')
+          for package in candidates:
+              importlib.import_module(package)
+          print(','.join(candidates))
+          PY
+          done
