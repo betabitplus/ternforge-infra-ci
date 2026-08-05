@@ -10,11 +10,9 @@ permissions:
 
 jobs:
   release:
-    uses: betabitplus/ternforge-infra-ci/.github/workflows/release.yml@8e22e770d769913598eb6fca19cb809bee20c822 # v1.1.0
+    uses: betabitplus/ternforge-infra-ci/.github/workflows/release.yml@1929a6b39cc3e006b71deae36dee17df95d50883 # v1.2.0
     with:
       app-client-id: ${{ vars.TERNFORGE_RELEASE_CLIENT_ID }}
       repository: ${{ github.event.repository.name }}
       release-type: simple
       synchronize-python-lock: false
-    secrets:
-      app-private-key: ${{ secrets.TERNFORGE_RELEASE_PRIVATE_KEY }}

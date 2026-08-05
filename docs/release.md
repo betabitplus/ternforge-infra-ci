@@ -36,10 +36,10 @@ inside the called reusable workflow.
 ## Released self caller
 
 The first release used a temporary same-commit bootstrap caller. That caller was
-removed immediately after `v1.0.0`. During the environment-secret declaration
-repair, the caller temporarily pins the last working `v1.1.0` interface only to
-publish the corrected reusable workflow. This transitional pin and secret pass
-must be removed before Task 0002 is accepted.
+removed immediately after `v1.0.0`. The permanent
+`.github/workflows/release-caller.yml` pins the protected-environment reusable
+workflow to the full commit SHA behind `v1.2.0` with a human-readable tag
+comment and passes no secrets.
 
 A release caller update is always a normal reviewed pull request. Existing
 callers never follow a moving branch or tag, and no bootstrap workflow, branch,
