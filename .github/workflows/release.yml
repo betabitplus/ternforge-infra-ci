@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      TERNFORGE_RELEASE_PRIVATE_KEY:
+        description: Environment-scoped private key exposed after release approval.
+        required: false
 
 permissions:
   contents: read
