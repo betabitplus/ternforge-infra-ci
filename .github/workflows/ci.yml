@@ -57,7 +57,7 @@ jobs:
         run: >-
           uvx --from zizmor==1.29.0 zizmor
           .github/workflows/release.yml
-          .github/workflows/release-bootstrap.yml
+          .github/workflows/release-caller.yml
 
       - name: Verify repository files
         run: |
