@@ -1,3 +1,17 @@
 # Changelog
 
+## 1.0.0 (2026-08-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* reusable workflow compatibility is now explicitly defined by released exact-SHA interfaces.
+
+### Features
+
+* add reusable CI and release workflows ([#5](https://github.com/betabitplus/ternforge-infra-ci/issues/5)) ([23ee779](https://github.com/betabitplus/ternforge-infra-ci/commit/23ee779bbf7c33545ca385731d0447a855c7c04f))
+* document stable workflow evolution ([#7](https://github.com/betabitplus/ternforge-infra-ci/issues/7)) ([ece58e8](https://github.com/betabitplus/ternforge-infra-ci/commit/ece58e860d296f9abfd39fbf196c391929b5c470))
+
+## Changelog
+
 Release history is managed by Release Please.
