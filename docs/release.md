@@ -40,10 +40,10 @@ of relying on that runtime replacement behavior.
 ## Released self caller
 
 The first release used a temporary same-commit bootstrap caller. That caller was
-removed immediately after `v1.0.0`. During this final compatibility repair the
-caller temporarily pins the last working `v1.1.0` workflow only to publish the
-corrected protected-environment interface. The next reviewed caller update must
-pin the corrected release by full SHA.
+removed immediately after `v1.0.0`. The permanent
+`.github/workflows/release-caller.yml` pins the protected-environment reusable
+workflow to the full commit SHA behind `v1.3.0` with a human-readable tag
+comment.
 
 A release caller update is always a normal reviewed pull request. Existing
 callers never follow a moving branch or tag, and no bootstrap workflow, branch,
