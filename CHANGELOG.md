@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.4.0...v1.5.0) (2026-08-06)
+
+
+### Features
+
+* adopt released infrastructure template lifecycle ([#21](https://github.com/betabitplus/ternforge-infra-ci/issues/21)) ([f53bec4](https://github.com/betabitplus/ternforge-infra-ci/commit/f53bec4f1f59eb7317596554ad63e836a8484f06))
+* update infrastructure template to v1.1.0 ([#23](https://github.com/betabitplus/ternforge-infra-ci/issues/23)) ([1dc38b5](https://github.com/betabitplus/ternforge-infra-ci/commit/1dc38b561721d8715ed8b1f8574bb431e65c8ce0))
+
 ## [1.4.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.3.0...v1.4.0) (2026-08-05)
 
 
