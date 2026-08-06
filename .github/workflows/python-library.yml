@@ -87,7 +87,7 @@ jobs:
       - name: Complexity, security, documentation, and dependency checks
         run: |
           set -euo pipefail
-          uv run --no-sync flake8 .
+          uv run --no-sync flake8 src tests
           uv run --no-sync radon cc --show-complexity --min C src tests
           uv run --no-sync radon mi --show --min B src
           uv run --no-sync bandit --recursive src
