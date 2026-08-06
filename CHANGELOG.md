@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.5.0...v1.5.1) (2026-08-06)
+
+
+### Bug Fixes
+
+* scope Flake8 to product code ([#24](https://github.com/betabitplus/ternforge-infra-ci/issues/24)) ([4e5d25d](https://github.com/betabitplus/ternforge-infra-ci/commit/4e5d25d92b29306d8c0202cec060a363bbcb178a))
+
 ## [1.5.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.4.0...v1.5.0) (2026-08-06)
 
 
