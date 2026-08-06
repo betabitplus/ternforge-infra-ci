@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.5.1...v1.6.0) (2026-08-06)
+
+
+### Features
+
+* allow repositories without policy dependency ([#26](https://github.com/betabitplus/ternforge-infra-ci/issues/26)) ([51acad1](https://github.com/betabitplus/ternforge-infra-ci/commit/51acad105440c9d819241e77b17cce843501a570))
+
 ## [1.5.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.5.0...v1.5.1) (2026-08-06)
 
 
