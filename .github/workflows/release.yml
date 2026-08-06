@@ -31,7 +31,8 @@ permissions:
 jobs:
   release:
     name: release
-    runs-on: ubuntu-latest
+    # Release orchestration is API-bound and fits the lightweight runner pool.
+    runs-on: ubuntu-slim
     environment: release
     steps:
       - name: Create current-repository release token
