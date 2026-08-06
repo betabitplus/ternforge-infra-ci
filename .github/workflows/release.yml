@@ -33,6 +33,7 @@ jobs:
     name: release
     # Release orchestration is API-bound and fits the lightweight runner pool.
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     environment: release
     steps:
       - name: Create current-repository release token
