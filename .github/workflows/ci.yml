@@ -13,7 +13,8 @@ permissions:
 jobs:
   required:
     name: ci / required
-    runs-on: ubuntu-latest
+    # Lightweight repository validation uses the container-backed runner pool.
+    runs-on: ubuntu-slim
     steps:
       - name: Validate pull request title
         if: github.event_name == 'pull_request'
