@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.6.0...v1.6.1) (2026-08-06)
+
+
+### Bug Fixes
+
+* bound control workflow runtime ([#29](https://github.com/betabitplus/ternforge-infra-ci/issues/29)) ([4703150](https://github.com/betabitplus/ternforge-infra-ci/commit/47031501af22c65af5545142eb3395b8fbf6b253))
+
 ## [1.6.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.5.1...v1.6.0) (2026-08-06)
 
 
