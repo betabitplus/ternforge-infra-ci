@@ -20,10 +20,18 @@ on:
         required: false
         type: boolean
         default: false
+      dispatch-app-client-id:
+        description: Client ID of the dispatch-only GitHub App during Task 0006 rollout.
+        required: false
+        type: string
+        default: ""
     secrets:
       app-private-key:
         description: Private key for the repository-scoped Release GitHub App.
         required: true
+      dispatch-app-private-key:
+        description: Private key for the dispatch-only GitHub App during Task 0006 rollout.
+        required: false
 
 permissions:
   contents: read
@@ -100,3 +108,55 @@ jobs:
           auth_header="$(printf 'x-access-token:%s' "$RELEASE_TOKEN" | base64 | tr -d '\n')"
           printf '::add-mask::%s\n' "$auth_header"
           git -c http.https://github.com/.extraheader="AUTHORIZATION: basic $auth_header" push origin HEAD
+
+      - name: Create update-dispatch token
+        id: dispatch-token
+        if: steps.release-please.outputs.release_created == 'true' && inputs.dispatch-app-client-id != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ inputs.dispatch-app-client-id }}
+          private-key: ${{ secrets.dispatch-app-private-key }}
+          owner: ${{ github.repository_owner }}
+          repositories: ternforge-infra-updates
+          permission-contents: write
+
+      - name: Verify exact dispatch-token scope
+        if: steps.release-please.outputs.release_created == 'true' && inputs.dispatch-app-client-id != ''
+        env:
+          GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          mapfile -t repositories < <(
+            gh api installation/repositories --paginate --jq '.repositories[].full_name'
+          )
+          test "${#repositories[@]}" -eq 1
+          test "${repositories[0]}" = "betabitplus/ternforge-infra-updates"
+
+      - name: Dispatch released state to full-fleet reconciliation
+        if: steps.release-please.outputs.release_created == 'true' && inputs.dispatch-app-client-id != ''
+        env:
+          GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
+          SOURCE_REF: refs/tags/${{ steps.release-please.outputs.tag_name }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ steps.release-please.outputs.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          jq -n \
+            --arg source_repository "$SOURCE_REPOSITORY" \
+            --arg source_ref "$SOURCE_REF" \
+            --arg source_sha "$SOURCE_SHA" \
+            '{
+              event_type: "ternforge-release",
+              client_payload: {
+                source_repository: $source_repository,
+                source_ref: $source_ref,
+                source_sha: $source_sha
+              }
+            }' > "$RUNNER_TEMP/repository-dispatch.json"
+          test "$(jq -r '.client_payload | keys | join(",")' "$RUNNER_TEMP/repository-dispatch.json")" = "source_ref,source_repository,source_sha"
+          gh api \
+            --method POST \
+            repos/betabitplus/ternforge-infra-updates/dispatches \
+            --input "$RUNNER_TEMP/repository-dispatch.json"
