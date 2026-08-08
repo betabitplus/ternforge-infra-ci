@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.6.1...v1.7.0) (2026-08-08)
+
+
+### Features
+
+* add release wake-up dispatch ([#31](https://github.com/betabitplus/ternforge-infra-ci/issues/31)) ([316c567](https://github.com/betabitplus/ternforge-infra-ci/commit/316c567a37b91da2f3286e8d01930039fed893df))
+
 ## [1.6.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.6.0...v1.6.1) (2026-08-06)
 
 
