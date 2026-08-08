@@ -21,17 +21,16 @@ on:
         type: boolean
         default: false
       dispatch-app-client-id:
-        description: Client ID of the dispatch-only GitHub App during Task 0006 rollout.
-        required: false
+        description: Client ID of the dispatch-only GitHub App.
+        required: true
         type: string
-        default: ""
     secrets:
       app-private-key:
         description: Private key for the repository-scoped Release GitHub App.
         required: true
       dispatch-app-private-key:
-        description: Private key for the dispatch-only GitHub App during Task 0006 rollout.
-        required: false
+        description: Private key for the dispatch-only GitHub App.
+        required: true
 
 permissions:
   contents: read
@@ -111,7 +110,7 @@ jobs:
 
       - name: Create update-dispatch token
         id: dispatch-token
-        if: steps.release-please.outputs.release_created == 'true' && inputs.dispatch-app-client-id != ''
+        if: steps.release-please.outputs.release_created == 'true'
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ inputs.dispatch-app-client-id }}
@@ -121,7 +120,7 @@ jobs:
           permission-contents: write
 
       - name: Verify exact dispatch-token scope
-        if: steps.release-please.outputs.release_created == 'true' && inputs.dispatch-app-client-id != ''
+        if: steps.release-please.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
         run: |
@@ -133,7 +132,7 @@ jobs:
           test "${repositories[0]}" = "betabitplus/ternforge-infra-updates"
 
       - name: Dispatch released state to full-fleet reconciliation
-        if: steps.release-please.outputs.release_created == 'true' && inputs.dispatch-app-client-id != ''
+        if: steps.release-please.outputs.release_created == 'true'
         env:
           GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
           SOURCE_REF: refs/tags/${{ steps.release-please.outputs.tag_name }}
