@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v2.0.0...v2.0.1) (2026-08-08)
+
+
+### Bug Fixes
+
+* install artifact dependencies from frozen lock ([#40](https://github.com/betabitplus/ternforge-infra-ci/issues/40)) ([26d6e6c](https://github.com/betabitplus/ternforge-infra-ci/commit/26d6e6cacf3574d0db67ead7e7cba126e371b8c3))
+
 ## [2.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.7.0...v2.0.0) (2026-08-08)
 
 
