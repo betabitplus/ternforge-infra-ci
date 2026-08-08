@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v2.0.1...v3.0.0) (2026-08-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* simplify release workflow credentials ([#44](https://github.com/betabitplus/ternforge-infra-ci/issues/44))
+
+### Features
+
+* simplify release workflow credentials ([#44](https://github.com/betabitplus/ternforge-infra-ci/issues/44)) ([bc6d43d](https://github.com/betabitplus/ternforge-infra-ci/commit/bc6d43de86bc28149f52ee71377424236f1f6b61))
+
 ## [2.0.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v2.0.0...v2.0.1) (2026-08-08)
 
 
