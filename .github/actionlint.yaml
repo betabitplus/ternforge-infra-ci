@@ -1,5 +1,0 @@
-# actionlint 1.7.7 predates GitHub's hosted ubuntu-slim label.
-# Declaring it here extends the known runner labels without disabling the rule.
-self-hosted-runner:
-  labels:
-    - ubuntu-slim
