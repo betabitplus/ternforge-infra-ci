@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v3.0.0...v3.1.0) (2026-08-08)
+
+
+### Features
+
+* support Playwright browser setup ([#49](https://github.com/betabitplus/ternforge-infra-ci/issues/49)) ([d71b33d](https://github.com/betabitplus/ternforge-infra-ci/commit/d71b33db0e4e5542a77e8eff13d5c5e297711e75))
+
 ## [3.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v2.0.1...v3.0.0) (2026-08-08)
 
 
