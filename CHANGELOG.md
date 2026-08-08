@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.7.0...v2.0.0) (2026-08-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* require release dispatch credentials ([#37](https://github.com/betabitplus/ternforge-infra-ci/issues/37))
+
+### Features
+
+* require release dispatch credentials ([#37](https://github.com/betabitplus/ternforge-infra-ci/issues/37)) ([ca7c469](https://github.com/betabitplus/ternforge-infra-ci/commit/ca7c469fefced18fe410eb39fa19e7f70825f3e3))
+
 ## [1.7.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v1.6.1...v1.7.0) (2026-08-08)
 
 
