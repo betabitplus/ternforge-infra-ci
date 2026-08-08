@@ -3,33 +3,14 @@ name: reusable release
 on:
   workflow_call:
     inputs:
-      app-client-id:
-        description: Client ID of the repository-scoped Release GitHub App.
-        required: true
-        type: string
-      repository:
-        description: Current repository name without the owner prefix.
-        required: true
-        type: string
-      release-type:
-        description: Release Please release type.
-        required: true
-        type: string
       synchronize-python-lock:
         description: Update uv.lock in the Release PR branch after a version change.
         required: false
         type: boolean
         default: false
-      dispatch-app-client-id:
-        description: Client ID of the dispatch-only GitHub App.
-        required: true
-        type: string
     secrets:
       app-private-key:
         description: Private key for the repository-scoped Release GitHub App.
-        required: true
-      dispatch-app-private-key:
-        description: Private key for the dispatch-only GitHub App.
         required: true
 
 permissions:
@@ -47,10 +28,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          client-id: ${{ inputs.app-client-id }}
+          client-id: ${{ vars.TERNFORGE_RELEASE_CLIENT_ID }}
           private-key: ${{ secrets.app-private-key }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ inputs.repository }}
           permission-contents: write
           permission-pull-requests: write
 
@@ -113,8 +92,8 @@ jobs:
         if: steps.release-please.outputs.release_created == 'true'
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          client-id: ${{ inputs.dispatch-app-client-id }}
-          private-key: ${{ secrets.dispatch-app-private-key }}
+          client-id: ${{ vars.TERNFORGE_RELEASE_CLIENT_ID }}
+          private-key: ${{ secrets.app-private-key }}
           owner: ${{ github.repository_owner }}
           repositories: ternforge-infra-updates
           permission-contents: write
