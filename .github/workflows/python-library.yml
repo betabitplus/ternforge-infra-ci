@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: ""
+      playwright-browsers:
+        description: Optional space-separated Playwright browser names installed before tests.
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -61,6 +66,21 @@ jobs:
 
       - name: Synchronize the locked environment once
         run: uv sync --locked --all-groups --python "${{ inputs.python-version }}"
+
+      - name: Install Playwright browsers
+        if: inputs.playwright-browsers != ''
+        env:
+          PLAYWRIGHT_BROWSERS: ${{ inputs.playwright-browsers }}
+        run: |
+          set -euo pipefail
+          read -r -a browsers <<<"$PLAYWRIGHT_BROWSERS"
+          for browser in "${browsers[@]}"; do
+            case "$browser" in
+              chromium|firefox|webkit) ;;
+              *) printf 'Unsupported Playwright browser: %s\n' "$browser" >&2; exit 2 ;;
+            esac
+          done
+          uv run --no-sync playwright install --with-deps "${browsers[@]}"
 
       - name: Ruff lint
         run: uv run --no-sync ruff check .
