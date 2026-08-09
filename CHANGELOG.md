@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v3.1.0...v4.0.0) (2026-08-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* read release key from environment ([#51](https://github.com/betabitplus/ternforge-infra-ci/issues/51))
+
+### Features
+
+* read release key from environment ([#51](https://github.com/betabitplus/ternforge-infra-ci/issues/51)) ([b5ebb4e](https://github.com/betabitplus/ternforge-infra-ci/commit/b5ebb4e209a18c7c2626e68ac729c868d50e0675))
+
 ## [3.1.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v3.0.0...v3.1.0) (2026-08-08)
 
 
