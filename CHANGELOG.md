@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v4.0.0...v5.0.0) (2026-08-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* secure release automation behind environments ([#55](https://github.com/betabitplus/ternforge-infra-ci/issues/55))
+
+### Features
+
+* secure release automation behind environments ([#55](https://github.com/betabitplus/ternforge-infra-ci/issues/55)) ([1192425](https://github.com/betabitplus/ternforge-infra-ci/commit/1192425c37cf43f04485a6585f097d430e97e8bc))
+
 ## [4.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v3.1.0...v4.0.0) (2026-08-09)
 
 
