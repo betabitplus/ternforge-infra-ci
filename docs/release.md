@@ -1,8 +1,8 @@
 # Release operation
 
 Each versioned repository keeps one thin local release job. The job targets the
-protected `release` environment and pins `.github/actions/release` from this
-repository to a full commit SHA.
+`release` environment, whose custom deployment branch policy allows only `main`,
+and pins `.github/actions/release` from this repository to a full commit SHA.
 
 The shared composite action:
 
