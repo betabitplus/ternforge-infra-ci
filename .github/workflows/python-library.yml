@@ -8,11 +8,6 @@ on:
         required: false
         type: string
         default: "3.12"
-      policy-command:
-        description: Direct Ternforge policy command supplied by the generated product.
-        required: false
-        type: string
-        default: "py-lib-policy check"
       runtime-audit-exclude-package:
         description: Optional unhashed internal VCS project excluded from the frozen runtime export.
         required: false
@@ -95,16 +90,10 @@ jobs:
           uv run --no-sync pyright
 
       - name: Import and Ternforge policy
-        env:
-          POLICY_COMMAND: ${{ inputs.policy-command }}
         run: |
           set -euo pipefail
           uv run --no-sync lint-imports
-          if [[ -n "$POLICY_COMMAND" ]]; then
-            # shellcheck disable=SC2153 # Supplied by the workflow step environment.
-            read -r -a policy_command <<<"$POLICY_COMMAND"
-            uv run --no-sync "${policy_command[@]}"
-          fi
+          uv run --no-sync py-lib-policy check
 
       - name: Complexity, security, documentation, and dependency checks
         run: |
