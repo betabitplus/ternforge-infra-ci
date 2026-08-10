@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.0...v5.0.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* require Ternforge policy in Python CI ([#61](https://github.com/betabitplus/ternforge-infra-ci/issues/61)) ([2d0e4c5](https://github.com/betabitplus/ternforge-infra-ci/commit/2d0e4c538228acd961fb0d7dc426ae3a0403a2be))
+
 ## [5.0.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v4.0.0...v5.0.0) (2026-08-09)
 
 
