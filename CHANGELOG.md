@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.1...v5.0.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* **deps:** update uv to v0.12.3 ([#33](https://github.com/betabitplus/ternforge-infra-ci/issues/33)) ([50a662d](https://github.com/betabitplus/ternforge-infra-ci/commit/50a662def8294b21fa7a3cbb4bb0d458e5bf1b1e))
+
 ## [5.0.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.0...v5.0.1) (2026-08-10)
 
 
