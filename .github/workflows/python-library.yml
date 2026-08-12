@@ -28,7 +28,7 @@ env:
 jobs:
   required:
     name: required
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Validate pull request title
         if: github.event_name == 'pull_request'
