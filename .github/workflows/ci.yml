@@ -53,6 +53,8 @@ jobs:
           enable-cache: false
 
       - name: Validate workflows with actionlint
+        env:
+          GOTOOLCHAIN: local
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
       - name: Audit privileged workflows with zizmor
