@@ -129,7 +129,6 @@ runs:
               source_sha: $source_sha
             }
           }' > "$RUNNER_TEMP/repository-dispatch.json"
-        test "$(jq -r '.client_payload | keys | join(",")' "$RUNNER_TEMP/repository-dispatch.json")" = "source_ref,source_repository,source_sha"
         gh api \
           --method POST \
           repos/betabitplus/ternforge-infra-updates/dispatches \

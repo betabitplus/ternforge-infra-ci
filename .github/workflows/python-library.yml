@@ -5,9 +5,8 @@ on:
     inputs:
       python-version:
         description: Python version used by the locked project environment.
-        required: false
+        required: true
         type: string
-        default: "3.12"
       runtime-audit-exclude-package:
         description: Optional unhashed internal VCS project excluded from the frozen runtime export.
         required: false
