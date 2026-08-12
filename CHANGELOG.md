@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.4](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.3...v5.0.4) (2026-08-12)
+
+
+### Bug Fixes
+
+* pin reusable runner OS ([#70](https://github.com/betabitplus/ternforge-infra-ci/issues/70)) ([ef0c2e2](https://github.com/betabitplus/ternforge-infra-ci/commit/ef0c2e27af87852b3bf26c334718ab748cc4b36b))
+
 ## [5.0.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.2...v5.0.3) (2026-08-12)
 
 
