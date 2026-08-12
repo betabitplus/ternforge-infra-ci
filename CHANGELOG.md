@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.2...v5.0.3) (2026-08-12)
+
+
+### Bug Fixes
+
+* remove stale CI defaults ([#67](https://github.com/betabitplus/ternforge-infra-ci/issues/67)) ([dbaf5b6](https://github.com/betabitplus/ternforge-infra-ci/commit/dbaf5b65c52018d38e82395a4dc8f7b1027ce92b))
+
 ## [5.0.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.1...v5.0.2) (2026-08-11)
 
 
