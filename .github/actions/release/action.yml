@@ -88,6 +88,7 @@ runs:
       if: inputs.synchronize-python-lock == 'true' && steps.release-please.outputs.prs_created == 'true'
       shell: bash
       env:
+        GH_TOKEN: ${{ steps.source-read-token.outputs.token }}
         RELEASE_TOKEN: ${{ steps.app-token.outputs.token }}
       run: |
         set -euo pipefail
