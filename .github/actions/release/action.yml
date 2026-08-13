@@ -12,6 +12,12 @@ inputs:
     description: Update uv.lock in the Release PR branch after a version change.
     required: false
     default: "false"
+  source-read-client-id:
+    description: Public client ID for the Ternforge source-read GitHub App.
+    required: false
+  source-read-private-key:
+    description: Private key for the Ternforge source-read GitHub App.
+    required: false
 
 runs:
   using: composite
@@ -60,6 +66,23 @@ runs:
       with:
         version-file: pyproject.toml
         enable-cache: false
+
+    - name: Create source-read token
+      id: source-read-token
+      if: inputs.synchronize-python-lock == 'true' && steps.release-please.outputs.prs_created == 'true'
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        client-id: ${{ inputs.source-read-client-id }}
+        private-key: ${{ inputs.source-read-private-key }}
+        owner: ${{ github.repository_owner }} # zizmor: ignore[github-app] intentionally read-only across the managed fleet
+        permission-contents: read
+
+    - name: Configure Git authentication
+      if: inputs.synchronize-python-lock == 'true' && steps.release-please.outputs.prs_created == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.source-read-token.outputs.token }}
+      run: gh auth setup-git
 
     - name: Synchronize the Python Release PR lockfile
       if: inputs.synchronize-python-lock == 'true' && steps.release-please.outputs.prs_created == 'true'
