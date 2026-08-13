@@ -74,6 +74,8 @@ jobs:
         run: gh auth setup-git
 
       - name: Synchronize the locked environment once
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: uv sync --locked --all-groups --python "${{ inputs.python-version }}"
 
       - name: Install Playwright browsers
@@ -149,6 +151,7 @@ jobs:
 
       - name: Install and import wheel and source distribution in isolation
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
           set -euo pipefail
