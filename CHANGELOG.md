@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.0.5](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.4...v5.0.5) (2026-08-13)
+
+
+### Bug Fixes
+
+* fail closed on actionlint Go ([#73](https://github.com/betabitplus/ternforge-infra-ci/issues/73)) ([549e6ab](https://github.com/betabitplus/ternforge-infra-ci/commit/549e6ab16383e37641359c88f287a3b68088efae))
+* simplify Python CI test execution ([#75](https://github.com/betabitplus/ternforge-infra-ci/issues/75)) ([ee3dd55](https://github.com/betabitplus/ternforge-infra-ci/commit/ee3dd5576004a7d02e54630b8cf1d5a9a44579ad))
+
 ## [5.0.4](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.3...v5.0.4) (2026-08-12)
 
 
