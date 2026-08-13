@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.7](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.6...v5.0.7) (2026-08-13)
+
+
+### Bug Fixes
+
+* keep source credential available for git fetches ([#79](https://github.com/betabitplus/ternforge-infra-ci/issues/79)) ([370bdf1](https://github.com/betabitplus/ternforge-infra-ci/commit/370bdf1fce03ee128613f28d4477dc66dafcebea))
+
 ## [5.0.6](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.5...v5.0.6) (2026-08-13)
 
 
