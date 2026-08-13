@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.6](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.5...v5.0.6) (2026-08-13)
+
+
+### Bug Fixes
+
+* support private source repositories ([#76](https://github.com/betabitplus/ternforge-infra-ci/issues/76)) ([5f7de8c](https://github.com/betabitplus/ternforge-infra-ci/commit/5f7de8c80fdd8a56ec71da9b76108f307a09c957))
+
 ## [5.0.5](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.4...v5.0.5) (2026-08-13)
 
 
