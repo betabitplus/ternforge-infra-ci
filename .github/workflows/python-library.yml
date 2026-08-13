@@ -22,9 +22,6 @@ permissions:
   contents: read
   pull-requests: read
 
-env:
-  PYTEST_XDIST_AUTO_NUM_WORKERS: "2"
-
 jobs:
   required:
     name: required
@@ -105,7 +102,7 @@ jobs:
           uv run --no-sync deptry .
 
       - name: Test
-        run: uv run --no-sync pytest
+        run: uv run --no-sync pytest -n 2
 
       - name: Audit frozen runtime dependencies
         env:
