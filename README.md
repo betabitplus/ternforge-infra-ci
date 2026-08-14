@@ -14,3 +14,7 @@ Shared CI and release building blocks for Ternforge repositories.
 Consumers pin shared automation to a full 40-character commit SHA and retain a
 human-readable release-tag comment next to the pin. Repository lifecycle and
 release operation are documented in [`docs/release.md`](docs/release.md).
+
+The optional private-repository personal-Mac fallback is documented in
+[`local-ci/README.md`](local-ci/README.md). GitHub-hosted execution remains the
+default when `TERNFORGE_RUNNER` is absent.
