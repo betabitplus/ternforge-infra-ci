@@ -309,7 +309,11 @@ cleanup_repository() {
 
 acquire_lock() {
   ensure_dirs
-  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  if [[ "${1:-}" == wait ]]; then
+    while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+      sleep 1
+    done
+  elif ! mkdir "$LOCK_DIR" 2>/dev/null; then
     log "another reconciliation is already running"
     exit 0
   fi
@@ -440,8 +444,8 @@ enable() {
 disable() {
   require_host_tools
   ensure_dirs
-  acquire_lock
   remove_launchd
+  acquire_lock wait
   if [[ -d "$LIMA_HOME/$VM_NAME" ]]; then
     install_lima
   fi
