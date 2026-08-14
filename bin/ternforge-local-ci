@@ -268,6 +268,9 @@ ensure_runner() {
   if [[ "$status" == online && "$installed" == "$RUNNER_VERSION" ]]; then
     return 0
   fi
+  if [[ "$status" != online ]]; then
+    clear_local_routing "$repo"
+  fi
   if [[ -n "$remote" && "$installed" == "$RUNNER_VERSION" ]] && wait_runner_online "$repo"; then
     return 0
   fi
