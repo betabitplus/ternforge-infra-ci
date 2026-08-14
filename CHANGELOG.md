@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.2...v5.1.3) (2026-08-14)
+
+
+### Bug Fixes
+
+* make local CI disable race-safe ([#87](https://github.com/betabitplus/ternforge-infra-ci/issues/87)) ([9fe37f6](https://github.com/betabitplus/ternforge-infra-ci/commit/9fe37f62655dd054d2890ae8d859eb733e860195))
+
 ## [5.1.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.1...v5.1.2) (2026-08-14)
 
 
