@@ -1,0 +1,484 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
+if [[ -f "$SCRIPT_DIR/../local-ci/versions.env" ]]; then
+  VERSIONS_FILE="$SCRIPT_DIR/../local-ci/versions.env"
+elif [[ -f "$SCRIPT_DIR/versions.env" ]]; then
+  VERSIONS_FILE="$SCRIPT_DIR/versions.env"
+else
+  printf '[local-ci] ERROR: versions.env not found\n' >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$VERSIONS_FILE"
+
+OWNER="betabitplus"
+CONTROL_REPO="$OWNER/ternforge-infra-repository-control"
+INVENTORY_PATH="fleet.auto.tfvars.json"
+VM_NAME="ternforge-local-ci"
+RUNNER_LABEL="ternforge-local"
+RUNNER_VARIABLE="TERNFORGE_RUNNER"
+LAUNCHD_LABEL="com.betabit.ternforge-local-ci"
+DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/ternforge-local-ci"
+TOOLS_DIR="$DATA_HOME/tools"
+STATE_DIR="$DATA_HOME/state"
+INSTALLED_BIN_DIR="$DATA_HOME/bin"
+INSTALLED_SCRIPT="$INSTALLED_BIN_DIR/ternforge-local-ci"
+INSTALLED_VERSIONS="$INSTALLED_BIN_DIR/versions.env"
+LIMA_HOME="$DATA_HOME/lima"
+LIMA_PREFIX="$TOOLS_DIR/lima-$LIMA_VERSION"
+LIMACTL="$LIMA_PREFIX/bin/limactl"
+PLIST="$HOME/Library/LaunchAgents/$LAUNCHD_LABEL.plist"
+LOG_FILE="$HOME/Library/Logs/ternforge-local-ci.log"
+LOCK_DIR="$STATE_DIR/reconcile.lock"
+export LIMA_HOME
+
+usage() {
+  cat <<'EOF'
+Usage: ternforge-local-ci <enable|reconcile|status|disable>
+
+  enable      Reconcile local runners, then enable 60-second reconciliation.
+  reconcile   Converge private-fleet runner registrations and routing.
+  status      Show desired/live visibility, eligibility, routing and runner state.
+  disable     Restore hosted routing, remove local runners, and stop the VM.
+EOF
+}
+
+log() { printf '[local-ci] %s\n' "$*"; }
+die() { printf '[local-ci] ERROR: %s\n' "$*" >&2; exit 1; }
+
+require_host_tools() {
+  local tool
+  for tool in gh jq curl tar shasum launchctl install; do
+    command -v "$tool" >/dev/null 2>&1 || die "missing host tool: $tool"
+  done
+  [[ "$(uname -s)" == Darwin ]] || die "macOS is required"
+  [[ "$(uname -m)" == arm64 ]] || die "Apple Silicon arm64 is required"
+  gh auth status -h github.com >/dev/null 2>&1 || die "GitHub CLI is not authenticated"
+}
+
+ensure_dirs() {
+  mkdir -p "$TOOLS_DIR" "$STATE_DIR" "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
+}
+
+lima_installed() { [[ -x "$LIMACTL" ]]; }
+
+install_lima() {
+  lima_installed && return 0
+  local tmp archive url
+  tmp="$(mktemp -d)"
+  archive="$tmp/lima.tar.gz"
+  url="https://github.com/lima-vm/lima/releases/download/v${LIMA_VERSION}/lima-${LIMA_VERSION}-Darwin-arm64.tar.gz"
+  log "installing Lima $LIMA_VERSION"
+  curl -fL --retry 3 --output "$archive" "$url"
+  mkdir -p "$LIMA_PREFIX"
+  tar -xzf "$archive" -C "$LIMA_PREFIX"
+  rm -rf "$tmp"
+  [[ -x "$LIMACTL" ]] || die "invalid Lima archive"
+  [[ "$($LIMACTL --version)" == *"$LIMA_VERSION"* ]] || die "unexpected Lima version"
+}
+
+write_lima_config() {
+  cat >"$STATE_DIR/lima.yaml" <<EOF
+minimumLimaVersion: "$LIMA_VERSION"
+vmType: vz
+arch: aarch64
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/noble/release-${UBUNTU_RELEASE}/ubuntu-24.04-server-cloudimg-arm64.img"
+    arch: aarch64
+    digest: "sha256:${UBUNTU_IMAGE_SHA256}"
+cpus: 8
+memory: "8GiB"
+disk: "40GiB"
+mounts: []
+containerd:
+  system: false
+  user: false
+ssh:
+  loadDotSSHPubKeys: false
+  forwardAgent: false
+EOF
+}
+
+vm_json() {
+  lima_installed || return 0
+  "$LIMACTL" list --json 2>/dev/null | jq -c --arg name "$VM_NAME" 'select(.name == $name)'
+}
+
+vm_exists() { [[ -n "$(vm_json)" ]]; }
+vm_running() { [[ "$(vm_json | jq -r '.status // empty')" == Running ]]; }
+
+guest() { "$LIMACTL" shell "$VM_NAME" -- bash -lc "$1"; }
+
+runtime_fingerprint() {
+  printf '%s\n' "$RUNNER_VERSION|$GH_VERSION" | shasum -a 256 | awk '{print $1}'
+}
+
+provision_guest() {
+  local wanted current
+  wanted="$(runtime_fingerprint)"
+  current="$(guest 'cat ~/.ternforge-local-ci-runtime 2>/dev/null || true')"
+  [[ "$current" == "$wanted" ]] && return 0
+
+  log "provisioning guest runtime"
+  guest "set -euo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq ca-certificates curl git jq libatomic1 tar gzip unzip
+    base=\"\$HOME/.local/share/ternforge-local-ci/base-runner\"
+    rm -rf \"\$base\" && mkdir -p \"\$base\"
+    curl -fL --retry 3 -o /tmp/runner.tgz \\
+      https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
+    tar -xzf /tmp/runner.tgz -C \"\$base\" && rm -f /tmp/runner.tgz
+    sudo \"\$base/bin/installdependencies.sh\" >/tmp/ternforge-runner-deps.log 2>&1
+    curl -fL --retry 3 -o /tmp/gh.tgz \\
+      https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz
+    rm -rf /tmp/gh && mkdir -p /tmp/gh
+    tar -xzf /tmp/gh.tgz -C /tmp/gh
+    sudo install -m 0755 /tmp/gh/gh_${GH_VERSION}_linux_arm64/bin/gh /usr/local/bin/gh
+    rm -rf /tmp/gh /tmp/gh.tgz
+    mkdir -p \"\$HOME/.local/share/ternforge-local-ci/runners\"
+    printf '%s\\n' '$wanted' > \"\$HOME/.ternforge-local-ci-runtime\"
+  "
+}
+
+ensure_vm() {
+  install_lima
+  write_lima_config
+  local actual_digest
+  actual_digest="$(vm_json | jq -r '.config.images[0].digest // empty')"
+  if vm_exists && [[ -n "$actual_digest" && "$actual_digest" != "sha256:$UBUNTU_IMAGE_SHA256" ]]; then
+    vm_running && die "Ubuntu image pin changed while the VM is active; disable local CI before re-enabling"
+    "$LIMACTL" delete "$VM_NAME"
+  fi
+  if ! vm_exists; then
+    log "creating $VM_NAME (8 vCPU / 8 GiB / 40 GiB)"
+    "$LIMACTL" create --name="$VM_NAME" --plain "$STATE_DIR/lima.yaml"
+  fi
+  if ! vm_running; then
+    log "starting $VM_NAME"
+    "$LIMACTL" start "$VM_NAME"
+  fi
+  provision_guest
+}
+
+fetch_inventory() {
+  gh api -H 'Accept: application/vnd.github.raw+json' \
+    "repos/$CONTROL_REPO/contents/$INVENTORY_PATH?ref=main"
+}
+
+fetch_live_repositories() {
+  gh repo list "$OWNER" --limit 1000 --json nameWithOwner,visibility
+}
+
+state_rows() {
+  local inventory live
+  inventory="$(fetch_inventory)"
+  live="$(fetch_live_repositories)"
+  jq -nr --argjson inventory "$inventory" --argjson live "$live" '
+    ($live | map({key: .nameWithOwner, value: (.visibility | ascii_downcase)}) | from_entries) as $actual
+    | $inventory.repositories[]
+    | .repository as $repo
+    | .visibility as $desired
+    | ($actual[$repo] // "missing") as $observed
+    | [$repo, $desired, $observed,
+       (if $desired == "private" and $observed == "private" then "yes" else "no" end)]
+    | @tsv
+  '
+}
+
+runner_name() { printf 'ternforge-local-%s\n' "${1#*/}"; }
+
+variable_value() {
+  gh variable list -R "$1" --json name,value \
+    --jq ".[] | select(.name == \"$RUNNER_VARIABLE\") | .value" 2>/dev/null || true
+}
+
+runner_json() {
+  local repo="$1" name
+  name="$(runner_name "$repo")"
+  gh api "repos/$repo/actions/runners" \
+    --jq ".runners[] | select(.name == \"$name\")" 2>/dev/null || true
+}
+
+set_local_routing() {
+  [[ "$(variable_value "$1")" == "$RUNNER_LABEL" ]] && return 0
+  gh variable set "$RUNNER_VARIABLE" --body "$RUNNER_LABEL" -R "$1"
+  log "$1: routed to $RUNNER_LABEL"
+}
+
+clear_local_routing() {
+  [[ -n "$(variable_value "$1")" ]] || return 0
+  gh variable delete "$RUNNER_VARIABLE" -R "$1"
+  log "$1: restored hosted routing"
+}
+
+remove_runner_registration() {
+  local repo="$1" id
+  id="$(runner_json "$repo" | jq -r '.id // empty')"
+  [[ -n "$id" ]] || return 0
+  gh api -X DELETE "repos/$repo/actions/runners/$id"
+  log "$repo: removed runner registration"
+}
+
+remove_guest_runner() {
+  local repo="$1" name
+  vm_running || return 0
+  name="$(runner_name "$repo")"
+  guest "set -euo pipefail
+    dir=\"\$HOME/.local/share/ternforge-local-ci/runners/$name\"
+    if [[ -d \"\$dir\" ]]; then
+      if [[ -x \"\$dir/svc.sh\" ]]; then
+        sudo \"\$dir/svc.sh\" stop >/dev/null 2>&1 || true
+        sudo \"\$dir/svc.sh\" uninstall >/dev/null 2>&1 || true
+      fi
+      rm -rf \"\$dir\"
+    fi
+  "
+}
+
+guest_runner_version() {
+  local name
+  vm_running || return 0
+  name="$(runner_name "$1")"
+  guest "cat \"\$HOME/.local/share/ternforge-local-ci/runners/$name/.ternforge-runner-version\" 2>/dev/null || true"
+}
+
+wait_runner_online() {
+  local repo="$1" _ status
+  for _ in {1..15}; do
+    status="$(runner_json "$repo" | jq -r '.status // empty')"
+    [[ "$status" == online ]] && return 0
+    sleep 1
+  done
+  return 1
+}
+
+ensure_runner() {
+  local repo="$1" name remote status installed registration endpoint
+  name="$(runner_name "$repo")"
+  remote="$(runner_json "$repo")"
+  status="$(printf '%s' "$remote" | jq -r '.status // empty')"
+  installed="$(guest_runner_version "$repo")"
+
+  if [[ "$status" == online && "$installed" == "$RUNNER_VERSION" ]]; then
+    return 0
+  fi
+  if [[ -n "$remote" && "$installed" == "$RUNNER_VERSION" ]] && wait_runner_online "$repo"; then
+    return 0
+  fi
+
+  clear_local_routing "$repo"
+  remove_runner_registration "$repo"
+  remove_guest_runner "$repo"
+
+  endpoint="repos/$repo/actions/runners/registration-token"
+  registration="$(gh api -X POST "$endpoint" --jq .token)"
+  [[ -n "$registration" ]] || die "$repo: runner registration material unavailable"
+
+  log "$repo: creating repository-scoped runner"
+  printf '%s\n' "$registration" | "$LIMACTL" shell "$VM_NAME" -- bash -lc "read -r registration
+    set -euo pipefail
+    base=\"\$HOME/.local/share/ternforge-local-ci/base-runner\"
+    dir=\"\$HOME/.local/share/ternforge-local-ci/runners/$name\"
+    rm -rf \"\$dir\" && cp -a \"\$base\" \"\$dir\"
+    cd \"\$dir\"
+    ./config.sh --unattended --replace --disableupdate \\
+      --url 'https://github.com/$repo' \\
+      --token \"\$registration\" \\
+      --name '$name' --labels '$RUNNER_LABEL' --work _work >/tmp/$name-config.log
+    printf '%s\\n' '$repo' > .ternforge-repository
+    printf '%s\\n' '$RUNNER_VERSION' > .ternforge-runner-version
+    sudo ./svc.sh install \"\$(id -un)\" >/tmp/$name-service-install.log
+    sudo ./svc.sh start >/tmp/$name-service-start.log
+  "
+  wait_runner_online "$repo" || die "$repo: runner did not become online"
+}
+
+cleanup_repository() {
+  clear_local_routing "$1"
+  remove_runner_registration "$1"
+  remove_guest_runner "$1"
+}
+
+acquire_lock() {
+  ensure_dirs
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    log "another reconciliation is already running"
+    exit 0
+  fi
+  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+}
+
+release_lock() {
+  rmdir "$LOCK_DIR" 2>/dev/null || true
+  trap - EXIT
+}
+
+reconcile() {
+  require_host_tools
+  ensure_dirs
+  acquire_lock
+  ensure_vm
+
+  local rows repo desired live eligible
+  rows="$(state_rows)"
+  while IFS=$'\t' read -r repo desired live eligible; do
+    [[ -n "$repo" ]] || continue
+    if [[ "$eligible" == yes ]]; then
+      ensure_runner "$repo"
+      set_local_routing "$repo"
+    else
+      cleanup_repository "$repo"
+    fi
+  done <<<"$rows"
+
+  # Markers are derived cleanup evidence only; eligibility still comes from state_rows.
+  while IFS= read -r repo; do
+    [[ -n "$repo" ]] || continue
+    if ! printf '%s\n' "$rows" | cut -f1 | grep -Fxq "$repo"; then
+      cleanup_repository "$repo"
+    fi
+  done < <(guest "find \"\$HOME/.local/share/ternforge-local-ci/runners\" -mindepth 2 -maxdepth 2 -name .ternforge-repository -exec cat {} \\; 2>/dev/null || true")
+
+  release_lock
+}
+
+status() {
+  require_host_tools
+  ensure_dirs
+  local rows repo desired live eligible routing remote runner_status
+  rows="$(state_rows)"
+  printf '%-48s %-8s %-8s %-8s %-16s %-8s\n' REPOSITORY DESIRED LIVE ELIGIBLE ROUTING RUNNER
+  while IFS=$'\t' read -r repo desired live eligible; do
+    [[ -n "$repo" ]] || continue
+    routing="$(variable_value "$repo")"
+    [[ -n "$routing" ]] || routing=hosted
+    remote="$(runner_json "$repo")"
+    if [[ -n "$remote" ]]; then
+      runner_status="$(printf '%s' "$remote" | jq -r '.status')"
+    else
+      runner_status=absent
+    fi
+    printf '%-48s %-8s %-8s %-8s %-16s %-8s\n' \
+      "$repo" "$desired" "$live" "$eligible" "$routing" "$runner_status"
+  done <<<"$rows"
+  if [[ -f "$PLIST" ]]; then
+    log 'mode: enabled'
+  else
+    log 'mode: disabled'
+  fi
+  if vm_running; then
+    log 'vm: running'
+  elif vm_exists; then
+    log 'vm: stopped'
+  elif [[ -d "$LIMA_HOME/$VM_NAME" ]]; then
+    log "vm: present; Lima $LIMA_VERSION is not installed"
+  else
+    log 'vm: absent'
+  fi
+}
+
+xml_escape() {
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g"
+}
+
+install_launchd() {
+  local current_user home_xml user_xml path_xml script_xml log_xml
+  current_user="${USER:-$(id -un)}"
+  mkdir -p "$INSTALLED_BIN_DIR"
+  [[ "$SCRIPT_PATH" == "$INSTALLED_SCRIPT" ]] || install -m 0755 "$SCRIPT_PATH" "$INSTALLED_SCRIPT"
+  [[ "$VERSIONS_FILE" == "$INSTALLED_VERSIONS" ]] || install -m 0644 "$VERSIONS_FILE" "$INSTALLED_VERSIONS"
+
+  home_xml="$(xml_escape "$HOME")"
+  user_xml="$(xml_escape "$current_user")"
+  path_xml="$(xml_escape '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')"
+  script_xml="$(xml_escape "$INSTALLED_SCRIPT")"
+  log_xml="$(xml_escape "$LOG_FILE")"
+  cat >"$PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LAUNCHD_LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string><string>-i</string>
+    <string>HOME=$home_xml</string><string>USER=$user_xml</string><string>PATH=$path_xml</string>
+    <string>$script_xml</string><string>reconcile</string>
+  </array>
+  <key>StartInterval</key><integer>60</integer>
+  <key>StandardOutPath</key><string>$log_xml</string>
+  <key>StandardErrorPath</key><string>$log_xml</string>
+</dict>
+</plist>
+EOF
+  launchctl bootout "gui/$UID/$LAUNCHD_LABEL" >/dev/null 2>&1 || true
+  launchctl bootstrap "gui/$UID" "$PLIST"
+  log 'installed 60-second launchd reconciler'
+}
+
+remove_launchd() {
+  launchctl bootout "gui/$UID/$LAUNCHD_LABEL" >/dev/null 2>&1 || true
+  rm -f "$PLIST"
+}
+
+enable() {
+  require_host_tools
+  ensure_dirs
+  reconcile
+  install_launchd
+  status
+}
+
+disable() {
+  require_host_tools
+  ensure_dirs
+  acquire_lock
+  remove_launchd
+  if [[ -d "$LIMA_HOME/$VM_NAME" ]]; then
+    install_lima
+  fi
+
+  local inventory repo repos
+  inventory="$(fetch_inventory)"
+  repos="$(printf '%s' "$inventory" | jq -r '.repositories[].repository')"
+  if vm_running; then
+    repos="$(printf '%s\n%s\n' "$repos" "$(guest "find \"\$HOME/.local/share/ternforge-local-ci/runners\" -mindepth 2 -maxdepth 2 -name .ternforge-repository -exec cat {} \\; 2>/dev/null || true")" | sort -u)"
+  fi
+
+  while IFS= read -r repo; do
+    [[ -n "$repo" ]] || continue
+    clear_local_routing "$repo"
+  done <<<"$repos"
+  while IFS= read -r repo; do
+    [[ -n "$repo" ]] || continue
+    remove_runner_registration "$repo"
+    remove_guest_runner "$repo"
+  done <<<"$repos"
+
+  if vm_running; then
+    guest 'command -v uv >/dev/null 2>&1 && uv cache prune --ci >/dev/null 2>&1 || true'
+    "$LIMACTL" stop "$VM_NAME"
+  fi
+  release_lock
+  log 'local CI disabled; hosted routing restored'
+}
+
+main() {
+  [[ $# -eq 1 ]] || { usage; exit 2; }
+  case "$1" in
+    enable) enable ;;
+    reconcile) reconcile ;;
+    status) status ;;
+    disable) disable ;;
+    -h|--help|help) usage ;;
+    *) usage; exit 2 ;;
+  esac
+}
+
+main "$@"
