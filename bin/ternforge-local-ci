@@ -34,7 +34,7 @@ LIMA_PREFIX="$TOOLS_DIR/lima-$LIMA_VERSION"
 LIMACTL="$LIMA_PREFIX/bin/limactl"
 PLIST="$HOME/Library/LaunchAgents/$LAUNCHD_LABEL.plist"
 LOG_FILE="$HOME/Library/Logs/ternforge-local-ci.log"
-LOCK_DIR="$STATE_DIR/reconcile.lock"
+LOCK_FILE="$STATE_DIR/reconcile.lock"
 export LIMA_HOME
 
 usage() {
@@ -53,7 +53,7 @@ die() { printf '[local-ci] ERROR: %s\n' "$*" >&2; exit 1; }
 
 require_host_tools() {
   local tool
-  for tool in gh jq curl tar shasum launchctl install; do
+  for tool in gh jq curl tar shasum launchctl install lockf; do
     command -v "$tool" >/dev/null 2>&1 || die "missing host tool: $tool"
   done
   [[ "$(uname -s)" == Darwin ]] || die "macOS is required"
@@ -195,14 +195,14 @@ runner_name() { printf 'ternforge-local-%s\n' "${1#*/}"; }
 
 variable_value() {
   gh variable list -R "$1" --json name,value \
-    --jq ".[] | select(.name == \"$RUNNER_VARIABLE\") | .value" 2>/dev/null || true
+    --jq ".[] | select(.name == \"$RUNNER_VARIABLE\") | .value"
 }
 
 runner_json() {
   local repo="$1" name
   name="$(runner_name "$repo")"
   gh api "repos/$repo/actions/runners" \
-    --jq ".runners[] | select(.name == \"$name\")" 2>/dev/null || true
+    --jq ".runners[] | select(.name == \"$name\")"
 }
 
 set_local_routing() {
@@ -307,28 +307,30 @@ cleanup_repository() {
   remove_guest_runner "$1"
 }
 
-acquire_lock() {
-  ensure_dirs
-  if [[ "${1:-}" == wait ]]; then
-    while ! mkdir "$LOCK_DIR" 2>/dev/null; do
-      sleep 1
-    done
-  elif ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    log "another reconciliation is already running"
-    exit 0
+run_locked() {
+  local mode="$1" command="$2" rc
+  if [[ "$mode" == wait ]]; then
+    TERNFORGE_LOCAL_CI_LOCKED=1 lockf -s -k "$LOCK_FILE" "$SCRIPT_PATH" "$command"
+    return
   fi
-  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
-}
-
-release_lock() {
-  rmdir "$LOCK_DIR" 2>/dev/null || true
-  trap - EXIT
+  TERNFORGE_LOCAL_CI_LOCKED=1 lockf -s -t 0 -k "$LOCK_FILE" "$SCRIPT_PATH" "$command" || {
+    rc=$?
+    if [[ "$rc" -eq 75 ]]; then
+      log "another reconciliation is already running"
+      return 0
+    fi
+    return "$rc"
+  }
 }
 
 reconcile() {
-  require_host_tools
-  ensure_dirs
-  acquire_lock
+  if [[ "${TERNFORGE_LOCAL_CI_LOCKED:-}" != 1 ]]; then
+    require_host_tools
+    ensure_dirs
+    run_locked no-wait reconcile
+    return
+  fi
+  unset TERNFORGE_LOCAL_CI_LOCKED
   ensure_vm
 
   local rows repo desired live eligible
@@ -350,8 +352,6 @@ reconcile() {
       cleanup_repository "$repo"
     fi
   done < <(guest "find \"\$HOME/.local/share/ternforge-local-ci/runners\" -mindepth 2 -maxdepth 2 -name .ternforge-repository -exec cat {} \\; 2>/dev/null || true")
-
-  release_lock
 }
 
 status() {
@@ -434,18 +434,27 @@ remove_launchd() {
 }
 
 enable() {
-  require_host_tools
-  ensure_dirs
-  reconcile
+  if [[ "${TERNFORGE_LOCAL_CI_LOCKED:-}" != 1 ]]; then
+    require_host_tools
+    ensure_dirs
+    run_locked wait enable
+    return
+  fi
+  unset TERNFORGE_LOCAL_CI_LOCKED
+  TERNFORGE_LOCAL_CI_LOCKED=1 reconcile
   install_launchd
   status
 }
 
 disable() {
-  require_host_tools
-  ensure_dirs
+  if [[ "${TERNFORGE_LOCAL_CI_LOCKED:-}" != 1 ]]; then
+    require_host_tools
+    ensure_dirs
+    run_locked wait disable
+    return
+  fi
+  unset TERNFORGE_LOCAL_CI_LOCKED
   remove_launchd
-  acquire_lock wait
   if [[ -d "$LIMA_HOME/$VM_NAME" ]]; then
     install_lima
   fi
@@ -468,10 +477,8 @@ disable() {
   done <<<"$repos"
 
   if vm_running; then
-    guest 'command -v uv >/dev/null 2>&1 && uv cache prune --ci >/dev/null 2>&1 || true'
     "$LIMACTL" stop "$VM_NAME"
   fi
-  release_lock
   log 'local CI disabled; hosted routing restored'
 }
 
