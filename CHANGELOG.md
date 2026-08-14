@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.0...v5.1.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* fail closed on offline local runner ([#83](https://github.com/betabitplus/ternforge-infra-ci/issues/83)) ([9714770](https://github.com/betabitplus/ternforge-infra-ci/commit/9714770503683a1793a137c80ebd6dede7d9da88))
+
 ## [5.1.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.7...v5.1.0) (2026-08-14)
 
 
