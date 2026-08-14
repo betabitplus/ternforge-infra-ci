@@ -233,8 +233,7 @@ remove_guest_runner() {
     dir=\"\$HOME/.local/share/ternforge-local-ci/runners/$name\"
     if [[ -d \"\$dir\" ]]; then
       if [[ -x \"\$dir/svc.sh\" ]]; then
-        sudo \"\$dir/svc.sh\" stop >/dev/null 2>&1 || true
-        sudo \"\$dir/svc.sh\" uninstall >/dev/null 2>&1 || true
+        (cd \"\$dir\" && sudo ./svc.sh uninstall >/dev/null)
       fi
       rm -rf \"\$dir\"
     fi
