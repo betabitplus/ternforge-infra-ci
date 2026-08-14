@@ -15,7 +15,7 @@ same Ternforge jobs through the local pool.
 current managed fleet, then installs a per-user macOS `launchd` job that reruns
 the same idempotent reconciliation every 60 seconds. `disable` removes the
 periodic job first, restores hosted routing, unregisters repository runners,
-prunes the shared guest uv cache, and only then stops the VM.
+and only then stops the VM.
 
 A repository is eligible only when both the committed
 `ternforge-infra-repository-control/fleet.auto.tfvars.json` visibility and live
