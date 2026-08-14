@@ -112,7 +112,7 @@ vm_json() {
 vm_exists() { [[ -n "$(vm_json)" ]]; }
 vm_running() { [[ "$(vm_json | jq -r '.status // empty')" == Running ]]; }
 
-guest() { "$LIMACTL" shell "$VM_NAME" -- bash -lc "$1"; }
+guest() { "$LIMACTL" shell "$VM_NAME" -- bash -lc "$1" </dev/null; }
 
 runtime_fingerprint() {
   printf '%s\n' "$RUNNER_VERSION|$GH_VERSION" | shasum -a 256 | awk '{print $1}'
