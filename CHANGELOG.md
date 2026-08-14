@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.4](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.3...v5.1.4) (2026-08-14)
+
+
+### Bug Fixes
+
+* simplify local CI reconciliation locking ([#89](https://github.com/betabitplus/ternforge-infra-ci/issues/89)) ([9ba00a3](https://github.com/betabitplus/ternforge-infra-ci/commit/9ba00a36353e2b8d5ffe326cf0eaba6b22c81be3))
+
 ## [5.1.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.2...v5.1.3) (2026-08-14)
 
 
