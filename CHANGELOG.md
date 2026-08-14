@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.1...v5.1.2) (2026-08-14)
+
+
+### Bug Fixes
+
+* isolate guest commands from fleet input ([#85](https://github.com/betabitplus/ternforge-infra-ci/issues/85)) ([4b95497](https://github.com/betabitplus/ternforge-infra-ci/commit/4b95497ab882aef3115fcc20c827b1cb3d7718af))
+
 ## [5.1.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.0...v5.1.1) (2026-08-14)
 
 
