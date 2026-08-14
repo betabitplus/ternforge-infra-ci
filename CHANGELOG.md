@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.7...v5.1.0) (2026-08-14)
+
+
+### Features
+
+* add private local CI fallback ([#81](https://github.com/betabitplus/ternforge-infra-ci/issues/81)) ([5fa0501](https://github.com/betabitplus/ternforge-infra-ci/commit/5fa05019e64c1aa1375ce705d86cecb8f2dc6168))
+
 ## [5.0.7](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.0.6...v5.0.7) (2026-08-13)
 
 
