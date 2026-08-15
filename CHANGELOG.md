@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.6](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.5...v5.1.6) (2026-08-15)
+
+
+### Bug Fixes
+
+* remove redundant release token readbacks ([#96](https://github.com/betabitplus/ternforge-infra-ci/issues/96)) ([4ade9e3](https://github.com/betabitplus/ternforge-infra-ci/commit/4ade9e3bfd40a181df40459c3edd700318ae129a))
+
 ## [5.1.5](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.4...v5.1.5) (2026-08-15)
 
 
