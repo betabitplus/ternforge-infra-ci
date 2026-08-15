@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.5](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.4...v5.1.5) (2026-08-15)
+
+
+### Bug Fixes
+
+* use native uv package build ([ca9ad5a](https://github.com/betabitplus/ternforge-infra-ci/commit/ca9ad5a3258bd2b4246d51f097c8a840dbe37716))
+
 ## [5.1.4](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.3...v5.1.4) (2026-08-14)
 
 
