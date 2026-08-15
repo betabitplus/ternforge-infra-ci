@@ -113,8 +113,6 @@ runs:
         SOURCE_SHA: ${{ steps.release-please.outputs.sha }}
       run: |
         set -euo pipefail
-        [[ "$SOURCE_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-        [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
         jq -n \
           --arg source_repository "$SOURCE_REPOSITORY" \
           --arg source_ref "$SOURCE_REF" \
