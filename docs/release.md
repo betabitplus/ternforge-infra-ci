@@ -6,9 +6,9 @@ and pins `.github/actions/release` from this repository to a full commit SHA.
 
 The shared composite action:
 
-1. mints a short-lived `ternforge-release` token for exactly the caller repository and verifies that scope;
+1. mints a short-lived `ternforge-release` token for exactly the caller repository;
 2. creates or updates one Release Please PR and, for Python callers, synchronizes only `uv.lock` on that PR branch;
-3. after a release is created, mints a second token from the same Release App limited to exactly `ternforge-infra-updates`, verifies that scope, and sends one `repository_dispatch` wake-up.
+3. after a release is created, mints a second token from the same Release App limited to exactly `ternforge-infra-updates` and sends one `repository_dispatch` wake-up.
 
 The caller supplies the public App client ID from its repository variable and the
 private key from its protected `release` environment secret. Python callers also

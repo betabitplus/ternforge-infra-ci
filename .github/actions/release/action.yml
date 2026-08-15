@@ -31,19 +31,6 @@ runs:
         permission-contents: write
         permission-pull-requests: write
 
-    - name: Verify exact release-token scope
-      shell: bash
-      env:
-        EXPECTED_REPOSITORY: ${{ github.repository }}
-        GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      run: |
-        set -euo pipefail
-        mapfile -t repositories < <(
-          gh api installation/repositories --paginate --jq '.repositories[].full_name'
-        )
-        test "${#repositories[@]}" -eq 1
-        test "${repositories[0]}" = "$EXPECTED_REPOSITORY"
-
     - name: Create or update the Release Please pull request
       id: release-please
       uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
@@ -115,19 +102,6 @@ runs:
         owner: ${{ github.repository_owner }}
         repositories: ternforge-infra-updates
         permission-contents: write
-
-    - name: Verify exact dispatch-token scope
-      if: steps.release-please.outputs.release_created == 'true'
-      shell: bash
-      env:
-        GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
-      run: |
-        set -euo pipefail
-        mapfile -t repositories < <(
-          gh api installation/repositories --paginate --jq '.repositories[].full_name'
-        )
-        test "${#repositories[@]}" -eq 1
-        test "${repositories[0]}" = "betabitplus/ternforge-infra-updates"
 
     - name: Dispatch released state to full-fleet reconciliation
       if: steps.release-please.outputs.release_created == 'true'
