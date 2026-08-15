@@ -1,0 +1,70 @@
+name: EXP-0047 GitHub App token scope
+description: Temporarily prove the exact repository boundary of the release and dispatch installation tokens.
+
+inputs:
+  app-client-id:
+    description: Public client ID for the Ternforge Release GitHub App.
+    required: true
+  app-private-key:
+    description: Private key for the Ternforge Release GitHub App.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Create current-repository release token
+      id: app-token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        client-id: ${{ inputs.app-client-id }}
+        private-key: ${{ inputs.app-private-key }}
+        permission-contents: write
+        permission-pull-requests: write
+
+    - name: Prove current-repository token boundary
+      shell: bash
+      env:
+        EXPECTED_REPOSITORY: ${{ github.repository }}
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        set -euo pipefail
+        mapfile -t repositories < <(
+          gh api installation/repositories --paginate --jq '.repositories[].full_name'
+        )
+        test "${#repositories[@]}" -eq 1
+        test "${repositories[0]}" = "$EXPECTED_REPOSITORY"
+
+        gh api --method POST "repos/${EXPECTED_REPOSITORY}/dispatches" -f event_type=ternforge-exp-0047
+        if gh api --method POST repos/betabitplus/ternforge-infra-updates/dispatches -f event_type=ternforge-exp-0047; then
+          echo 'release token unexpectedly reached ternforge-infra-updates' >&2
+          exit 1
+        fi
+
+    - name: Create update-dispatch token
+      id: dispatch-token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        client-id: ${{ inputs.app-client-id }}
+        private-key: ${{ inputs.app-private-key }}
+        owner: ${{ github.repository_owner }}
+        repositories: ternforge-infra-updates
+        permission-contents: write
+
+    - name: Prove update-dispatch token boundary
+      shell: bash
+      env:
+        CURRENT_REPOSITORY: ${{ github.repository }}
+        GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
+      run: |
+        set -euo pipefail
+        mapfile -t repositories < <(
+          gh api installation/repositories --paginate --jq '.repositories[].full_name'
+        )
+        test "${#repositories[@]}" -eq 1
+        test "${repositories[0]}" = "betabitplus/ternforge-infra-updates"
+
+        gh api --method POST repos/betabitplus/ternforge-infra-updates/dispatches -f event_type=ternforge-exp-0047
+        if gh api --method POST "repos/${CURRENT_REPOSITORY}/dispatches" -f event_type=ternforge-exp-0047; then
+          echo 'dispatch token unexpectedly reached the current repository' >&2
+          exit 1
+        fi
