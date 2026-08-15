@@ -55,11 +55,16 @@ jobs:
       - name: Validate workflows with actionlint
         env:
           GOTOOLCHAIN: local
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          # renovate: datasource=github-releases depName=rhysd/actionlint versioning=semver extractVersion=^v(?<version>.*)$
+          ACTIONLINT_VERSION: 1.7.12
+        run: go run "github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}"
 
       - name: Audit privileged workflows with zizmor
+        env:
+          # renovate: datasource=pypi depName=zizmor versioning=pep440
+          ZIZMOR_VERSION: 1.29.0
         run: >-
-          uvx --from zizmor==1.29.0 zizmor
+          uvx --from "zizmor==${ZIZMOR_VERSION}" zizmor
           .github/actions/release/action.yml
           .github/workflows/release-caller.yml
 
