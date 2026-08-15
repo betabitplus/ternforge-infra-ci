@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.7](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.6...v5.1.7) (2026-08-15)
+
+
+### Bug Fixes
+
+* delegate Playwright target validation ([#99](https://github.com/betabitplus/ternforge-infra-ci/issues/99)) ([662ca0b](https://github.com/betabitplus/ternforge-infra-ci/commit/662ca0b674f37aa48658dab4b2d16baec11d4c5b))
+
 ## [5.1.6](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.5...v5.1.6) (2026-08-15)
 
 
