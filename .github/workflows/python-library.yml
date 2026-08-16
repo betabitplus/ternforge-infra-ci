@@ -109,8 +109,16 @@ jobs:
         run: |
           set -euo pipefail
           uv run --no-sync flake8 src tests
-          uv run --no-sync radon cc --show-complexity --min C src tests
-          uv run --no-sync radon mi --show --min B src
+          radon_cc="$(uv run --no-sync radon cc --show-complexity --min C src)"
+          if [[ -n "$radon_cc" ]]; then
+            printf '%s\n' "$radon_cc"
+            exit 1
+          fi
+          radon_mi="$(uv run --no-sync radon mi --show --min B src)"
+          if [[ -n "$radon_mi" ]]; then
+            printf '%s\n' "$radon_mi"
+            exit 1
+          fi
           uv run --no-sync bandit --recursive src
           uv run --no-sync interrogate --fail-under 100 src
           uv run --no-sync deptry .
