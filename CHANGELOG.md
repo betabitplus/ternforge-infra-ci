@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.9](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.8...v5.1.9) (2026-08-16)
+
+
+### Bug Fixes
+
+* sync exported artifact closure ([#108](https://github.com/betabitplus/ternforge-infra-ci/issues/108)) ([81ab091](https://github.com/betabitplus/ternforge-infra-ci/commit/81ab091f80780e3dfac704e6290c66171657633f))
+
 ## [5.1.8](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.7...v5.1.8) (2026-08-16)
 
 
