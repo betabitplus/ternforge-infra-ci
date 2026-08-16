@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.10](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.9...v5.1.10) (2026-08-16)
+
+
+### Bug Fixes
+
+* preserve radon gate semantics ([#112](https://github.com/betabitplus/ternforge-infra-ci/issues/112)) ([10e92ba](https://github.com/betabitplus/ternforge-infra-ci/commit/10e92ba83a1f48421bde22a7b18cfd571aaf4050))
+
 ## [5.1.9](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.8...v5.1.9) (2026-08-16)
 
 
