@@ -72,5 +72,6 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
+          bash -n bin/ternforge-local-ci
           python -m json.tool release-please-config.json >/dev/null
           python -m json.tool .release-please-manifest.json >/dev/null
