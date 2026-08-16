@@ -166,7 +166,7 @@ jobs:
           for artifact in dist/*.whl dist/*.tar.gz; do
             environment="$RUNNER_TEMP/$(basename "$artifact" | tr '.-' '__')"
             uv venv --python "$PYTHON_VERSION" "$environment"
-            uv pip install --python "$environment/bin/python" --requirement "$requirements"
+            uv pip sync --python "$environment/bin/python" "$requirements"
             uv pip install --python "$environment/bin/python" --no-deps "$artifact"
             "$environment/bin/python" - "$project_name" <<'PY'
           import importlib
