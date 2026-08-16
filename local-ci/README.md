@@ -26,8 +26,11 @@ repositories have neither. The fleet inventory remains the only desired-state
 repository list; live GitHub state is readback only.
 
 The VM uses guest-local storage with no host filesystem mount, Docker socket,
-Rosetta, or SSH-agent forwarding. Runner auto-update is disabled; Lima, GitHub
-Actions Runner, and GitHub CLI versions live in `versions.env` and are updated
-by Renovate. The exact Ubuntu image release and digest are intentionally updated
-together only with a reviewed local-CI acceptance run because Ubuntu cloud
-images do not have a native Renovate datasource in the current setup.
+Rosetta, or SSH-agent forwarding. Runner auto-update is disabled; Lima and
+GitHub CLI versions plus the GitHub Actions Runner version+archive SHA-256 live
+in `versions.env` and are updated by Renovate. Reconciliation compares Lima's
+canonical effective VM config and derives the guest runtime marker from the
+actual provisioning payload, so config/provisioning changes cannot remain stale.
+The exact Ubuntu image release and digest are intentionally updated together only
+with a reviewed local-CI acceptance run because Ubuntu cloud images do not have
+a native Renovate datasource in the current setup.
