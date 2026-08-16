@@ -101,6 +101,7 @@ containerd:
 ssh:
   loadDotSSHPubKeys: false
   forwardAgent: false
+plain: true
 EOF
 }
 
@@ -112,52 +113,60 @@ vm_json() {
 vm_exists() { [[ -n "$(vm_json)" ]]; }
 vm_running() { [[ "$(vm_json | jq -r '.status // empty')" == Running ]]; }
 
+lima_config_matches() {
+  local desired current
+  desired="$("$LIMACTL" --log-level=error validate --fill "$STATE_DIR/lima.yaml")" || return 1
+  current="$("$LIMACTL" --log-level=error validate --fill "$LIMA_HOME/$VM_NAME/lima.yaml")" || return 1
+  [[ "$desired" == "$current" ]]
+}
+
 guest() { "$LIMACTL" shell "$VM_NAME" -- bash -lc "$1" </dev/null; }
 
-runtime_fingerprint() {
-  printf '%s\n' "$RUNNER_VERSION|$GH_VERSION" | shasum -a 256 | awk '{print $1}'
+guest_provisioning_script() {
+  cat <<EOF
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update -qq
+sudo apt-get install -y -qq ca-certificates curl git jq libatomic1 tar gzip unzip
+base="\$HOME/.local/share/ternforge-local-ci/base-runner"
+rm -rf "\$base" && mkdir -p "\$base"
+curl -fL --retry 3 -o /tmp/runner.tgz \\
+  "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz"
+printf '%s  %s\n' '${RUNNER_SHA256}' /tmp/runner.tgz | sha256sum --check --strict
+tar -xzf /tmp/runner.tgz -C "\$base" && rm -f /tmp/runner.tgz
+sudo "\$base/bin/installdependencies.sh" >/tmp/ternforge-runner-deps.log 2>&1
+curl -fL --retry 3 -o /tmp/gh.tgz \\
+  "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz"
+rm -rf /tmp/gh && mkdir -p /tmp/gh
+tar -xzf /tmp/gh.tgz -C /tmp/gh
+sudo install -m 0755 /tmp/gh/gh_${GH_VERSION}_linux_arm64/bin/gh /usr/local/bin/gh
+rm -rf /tmp/gh /tmp/gh.tgz
+mkdir -p "\$HOME/.local/share/ternforge-local-ci/runners"
+EOF
 }
 
 provision_guest() {
-  local wanted current
-  wanted="$(runtime_fingerprint)"
+  local payload wanted current
+  payload="$(guest_provisioning_script)"
+  wanted="$(printf '%s' "$payload" | shasum -a 256 | awk '{print $1}')"
   current="$(guest 'cat ~/.ternforge-local-ci-runtime 2>/dev/null || true')"
   [[ "$current" == "$wanted" ]] && return 0
 
   log "provisioning guest runtime"
-  guest "set -euo pipefail
-    export DEBIAN_FRONTEND=noninteractive
-    sudo apt-get update -qq
-    sudo apt-get install -y -qq ca-certificates curl git jq libatomic1 tar gzip unzip
-    base=\"\$HOME/.local/share/ternforge-local-ci/base-runner\"
-    rm -rf \"\$base\" && mkdir -p \"\$base\"
-    curl -fL --retry 3 -o /tmp/runner.tgz \\
-      https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz
-    tar -xzf /tmp/runner.tgz -C \"\$base\" && rm -f /tmp/runner.tgz
-    sudo \"\$base/bin/installdependencies.sh\" >/tmp/ternforge-runner-deps.log 2>&1
-    curl -fL --retry 3 -o /tmp/gh.tgz \\
-      https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_arm64.tar.gz
-    rm -rf /tmp/gh && mkdir -p /tmp/gh
-    tar -xzf /tmp/gh.tgz -C /tmp/gh
-    sudo install -m 0755 /tmp/gh/gh_${GH_VERSION}_linux_arm64/bin/gh /usr/local/bin/gh
-    rm -rf /tmp/gh /tmp/gh.tgz
-    mkdir -p \"\$HOME/.local/share/ternforge-local-ci/runners\"
-    printf '%s\\n' '$wanted' > \"\$HOME/.ternforge-local-ci-runtime\"
-  "
+  guest "$payload"
+  guest "printf '%s\\n' '$wanted' > \"\$HOME/.ternforge-local-ci-runtime\""
 }
 
 ensure_vm() {
   install_lima
   write_lima_config
-  local actual_digest
-  actual_digest="$(vm_json | jq -r '.config.images[0].digest // empty')"
-  if vm_exists && [[ -n "$actual_digest" && "$actual_digest" != "sha256:$UBUNTU_IMAGE_SHA256" ]]; then
-    vm_running && die "Ubuntu image pin changed while the VM is active; disable local CI before re-enabling"
+  if vm_exists && ! lima_config_matches; then
+    vm_running && die "Lima VM configuration changed while the VM is active; disable local CI before re-enabling"
     "$LIMACTL" delete "$VM_NAME"
   fi
   if ! vm_exists; then
     log "creating $VM_NAME (8 vCPU / 8 GiB / 40 GiB)"
-    "$LIMACTL" create --name="$VM_NAME" --plain "$STATE_DIR/lima.yaml"
+    "$LIMACTL" create --name="$VM_NAME" "$STATE_DIR/lima.yaml"
   fi
   if ! vm_running; then
     log "starting $VM_NAME"

@@ -83,7 +83,6 @@ runs:
         if git diff --quiet -- uv.lock; then
           exit 0
         fi
-        test "$(git diff --name-only)" = "uv.lock"
         git config user.name "Ternforge Release"
         git config user.email "313545885+ternforge-release[bot]@users.noreply.github.com"
         git add uv.lock
