@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ""
+      runtime-audit-ignore-vulnerabilities:
+        description: Optional space-separated exact vulnerability IDs accepted by the calling repository.
+        required: false
+        type: string
+        default: ""
       playwright-browsers:
         description: Optional space-separated Playwright install targets validated by the locked Playwright CLI.
         required: false
@@ -129,6 +134,7 @@ jobs:
       - name: Audit frozen runtime dependencies
         env:
           EXCLUDE_PACKAGE: ${{ inputs.runtime-audit-exclude-package }}
+          IGNORE_VULNERABILITIES: ${{ inputs.runtime-audit-ignore-vulnerabilities }}
         run: |
           set -euo pipefail
           requirements="$RUNNER_TEMP/runtime-requirements.txt"
@@ -137,10 +143,15 @@ jobs:
             export_args+=(--no-emit-package "$EXCLUDE_PACKAGE")
           fi
           uv export "${export_args[@]}"
-          uv run --frozen --no-sync pip-audit \
-            --requirement "$requirements" \
-            --no-deps \
-            --disable-pip
+
+          audit_args=(--requirement "$requirements" --no-deps --disable-pip)
+          if [[ -n "$IGNORE_VULNERABILITIES" ]]; then
+            read -r -a vulnerability_ids <<<"$IGNORE_VULNERABILITIES"
+            for vulnerability_id in "${vulnerability_ids[@]}"; do
+              audit_args+=(--ignore-vuln "$vulnerability_id")
+            done
+          fi
+          uv run --frozen --no-sync pip-audit "${audit_args[@]}"
 
       - name: Build and inspect distributions
         run: |
