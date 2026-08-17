@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.10...v5.2.0) (2026-08-17)
+
+
+### Features
+
+* support repository-scoped runtime audit waivers ([#115](https://github.com/betabitplus/ternforge-infra-ci/issues/115)) ([115e2ba](https://github.com/betabitplus/ternforge-infra-ci/commit/115e2ba271824eb6d6ff8edf1898ae62a0f199b0))
+
 ## [5.1.10](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.9...v5.1.10) (2026-08-16)
 
 
