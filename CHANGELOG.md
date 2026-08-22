@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.1...v5.4.2) (2026-08-22)
+
+
+### Bug Fixes
+
+* package Pages artifacts on hosted runner ([#134](https://github.com/betabitplus/ternforge-infra-ci/issues/134)) ([3542d10](https://github.com/betabitplus/ternforge-infra-ci/commit/3542d10a3f11b91a27ea5792bc4dffba69124d0e))
+
 ## [5.4.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.0...v5.4.1) (2026-08-22)
 
 
