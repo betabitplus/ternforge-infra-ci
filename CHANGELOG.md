@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.0...v5.4.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* use locked Python for docs metadata ([#132](https://github.com/betabitplus/ternforge-infra-ci/issues/132)) ([5a5ea05](https://github.com/betabitplus/ternforge-infra-ci/commit/5a5ea05abf9bbc369f099503386f2f9481c643c1))
+
 ## [5.4.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.3.1...v5.4.0) (2026-08-22)
 
 
