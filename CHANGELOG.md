@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.3.0...v5.3.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* gate offline docs build on Sphinx config ([#123](https://github.com/betabitplus/ternforge-infra-ci/issues/123)) ([ead9d49](https://github.com/betabitplus/ternforge-infra-ci/commit/ead9d4957bf884b8ce62a97163f6ed4cdea5e39a))
+
 ## [5.3.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.2.0...v5.3.0) (2026-08-22)
 
 
