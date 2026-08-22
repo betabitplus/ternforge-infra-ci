@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.3.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.2.0...v5.3.0) (2026-08-22)
+
+
+### Features
+
+* validate offline documentation builds ([#120](https://github.com/betabitplus/ternforge-infra-ci/issues/120)) ([0590d9f](https://github.com/betabitplus/ternforge-infra-ci/commit/0590d9fe5ab11050d024e0acfc922121ae00dbe1))
+
 ## [5.2.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.1.10...v5.2.0) (2026-08-17)
 
 
