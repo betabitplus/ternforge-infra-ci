@@ -132,6 +132,7 @@ jobs:
         run: uv run --no-sync pytest -n 2
 
       - name: Build documentation without live example execution
+        if: ${{ hashFiles('docs/conf.py') != '' }}
         run: |
           uv run --no-sync sphinx-build \
             -W \
