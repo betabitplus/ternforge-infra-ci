@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.3.1...v5.4.0) (2026-08-22)
+
+
+### Features
+
+* add live docs Pages workflow ([#125](https://github.com/betabitplus/ternforge-infra-ci/issues/125)) ([299ed67](https://github.com/betabitplus/ternforge-infra-ci/commit/299ed67cca63f2f527e0ae9041b20b7a5e547cac))
+
 ## [5.3.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.3.0...v5.3.1) (2026-08-22)
 
 
