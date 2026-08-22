@@ -117,6 +117,46 @@ publish() {
     || die "$REPOSITORY does not route live docs to $RUNNER_LABEL"
   gh workflow view docs.yml -R "$REPOSITORY" >/dev/null
 
+  before_run="$(latest_run_id)"
+  log "dispatching $REPOSITORY docs for $tag"
+  gh workflow run docs.yml -R "$REPOSITORY" --ref main -f ref="$tag" -f force="$force"
+
+  run_id=""
+  for _ in {1..30}; do
+    candidate="$(latest_run_id)"
+    if [[ -n "$candidate" && "$candidate" != "$before_run" ]]; then
+      run_id="$candidate"
+      break
+    fi
+    sleep 1
+  done
+  [[ -n "$run_id" ]] || die "could not identify dispatched Docs workflow run"
+  log "workflow run: https://github.com/$REPOSITORY/actions/runs/$run_id"
+
+  build_needed=""
+  for _ in {1..60}; do
+    run_json="$(gh run view "$run_id" -R "$REPOSITORY" --json status,conclusion,jobs)"
+    build_status="$(jq -r '.jobs[]? | select(.name == "docs / live build") | .status // empty' <<<"$run_json")"
+    build_conclusion="$(jq -r '.jobs[]? | select(.name == "docs / live build") | .conclusion // empty' <<<"$run_json")"
+    run_status="$(jq -r '.status // empty' <<<"$run_json")"
+
+    if [[ "$build_conclusion" == skipped ]]; then
+      gh run watch "$run_id" -R "$REPOSITORY" --exit-status
+      log "already current $tag"
+      return 0
+    fi
+    if [[ "$build_status" == queued || "$build_status" == waiting ]]; then
+      build_needed=true
+      break
+    fi
+    if [[ "$run_status" == completed ]]; then
+      gh run watch "$run_id" -R "$REPOSITORY" --exit-status
+      die "Docs workflow completed without a runnable live-build job"
+    fi
+    sleep 1
+  done
+  [[ "$build_needed" == true ]] || die "timed out waiting for live-build planning"
+
   ensure_runner_archive
   mkdir -p "$STATE_DIR/runs"
   RUN_DIR="$(mktemp -d "$STATE_DIR/runs/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")"
@@ -140,22 +180,6 @@ publish() {
   (cd "$RUN_DIR" && ./run.sh) &
   RUNNER_PROCESS=$!
   wait_runner_online || die "ephemeral runner did not become online"
-
-  before_run="$(latest_run_id)"
-  log "dispatching $REPOSITORY docs for $tag"
-  gh workflow run docs.yml -R "$REPOSITORY" --ref main -f ref="$tag" -f force="$force"
-
-  run_id=""
-  for _ in {1..30}; do
-    candidate="$(latest_run_id)"
-    if [[ -n "$candidate" && "$candidate" != "$before_run" ]]; then
-      run_id="$candidate"
-      break
-    fi
-    sleep 1
-  done
-  [[ -n "$run_id" ]] || die "could not identify dispatched Docs workflow run"
-  log "workflow run: https://github.com/$REPOSITORY/actions/runs/$run_id"
 
   wait "$RUNNER_PROCESS"
   RUNNER_PROCESS=""
