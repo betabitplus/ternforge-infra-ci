@@ -7,8 +7,9 @@ Shared CI and release building blocks for Ternforge repositories.
 - `.github/workflows/python-library.yml` runs the direct locked Python-library
   quality, security, test, offline documentation, audit, build, metadata,
   manifest, and isolated artifact checks behind the stable `ci / required`
-  interface. Sphinx-Gallery pages are built with live example execution
-  disabled.
+  interface. Repositories with `docs/conf.py` build Sphinx-Gallery pages with
+  live example execution disabled; repositories not yet migrated to Sphinx skip
+  that step.
 - `.github/actions/release/action.yml` runs Release Please with a short-lived
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
