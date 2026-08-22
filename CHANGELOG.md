@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.2...v5.4.3) (2026-08-22)
+
+
+### Bug Fixes
+
+* make live docs no-op cheap ([#136](https://github.com/betabitplus/ternforge-infra-ci/issues/136)) ([30157bb](https://github.com/betabitplus/ternforge-infra-ci/commit/30157bb6b0201d79e1b88e4866c711120aa31350))
+
 ## [5.4.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.1...v5.4.2) (2026-08-22)
 
 
