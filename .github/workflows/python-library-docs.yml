@@ -1,0 +1,239 @@
+name: reusable python library docs
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version used by the locked project environment.
+        required: true
+        type: string
+      package-name:
+        description: Importable top-level package name whose facade and _api tree define the public Python API.
+        required: true
+        type: string
+      live-mode:
+        description: release builds automatically on relevant releases; manual only reports drift until workflow_dispatch.
+        required: false
+        type: string
+        default: release
+      docs-runner:
+        description: Runner label used for live documentation execution.
+        required: false
+        type: string
+        default: ubuntu-24.04
+      local-environment:
+        description: Load the repository's trusted direnv environment before live execution.
+        required: false
+        type: boolean
+        default: false
+      target-ref:
+        description: Release tag to publish. Empty resolves to the repository's latest GitHub release.
+        required: false
+        type: string
+        default: ""
+      force:
+        description: Rebuild even when the published source already covers all relevant changes.
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      app-private-key:
+        description: Private key for the Ternforge read-only source GitHub App used to authenticate private dependency Git access.
+        required: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-24.04
+    outputs:
+      build-needed: ${{ steps.plan.outputs.build-needed }}
+      target-ref: ${{ steps.plan.outputs.target-ref }}
+      target-sha: ${{ steps.plan.outputs.target-sha }}
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Decide whether published docs are stale
+        id: plan
+        env:
+          FORCE: ${{ inputs.force }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_NAME: ${{ inputs.package-name }}
+          TARGET_REF_INPUT: ${{ inputs.target-ref }}
+        run: |
+          set -euo pipefail
+
+          target_ref="$TARGET_REF_INPUT"
+          if [[ -z "$target_ref" ]]; then
+            target_ref="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+          target_ref="${target_ref#refs/tags/}"
+          target_sha="$(git rev-parse "refs/tags/$target_ref^{commit}")"
+
+          published_sha=""
+          pages_url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null || true)"
+          if [[ -n "$pages_url" ]]; then
+            metadata="$(curl -fsSL --max-time 10 "${pages_url%/}/ternforge-docs.json?run=$GITHUB_RUN_ID" 2>/dev/null || true)"
+            if [[ -n "$metadata" ]] && jq -e . >/dev/null 2>&1 <<<"$metadata"; then
+              published_sha="$(jq -r '.source_sha // empty' <<<"$metadata")"
+            fi
+          fi
+
+          build_needed=false
+          reason="published docs already cover the relevant surface"
+          if [[ "$FORCE" == true ]]; then
+            build_needed=true
+            reason="forced by workflow dispatch"
+          elif [[ -z "$published_sha" ]]; then
+            build_needed=true
+            reason="no published Ternforge docs metadata exists"
+          elif ! git cat-file -e "$published_sha^{commit}" 2>/dev/null; then
+            build_needed=true
+            reason="published source commit is not available in repository history"
+          else
+            mapfile -t changed < <(
+              git diff --name-only "$published_sha" "$target_sha" -- \
+                docs \
+                examples \
+                pyproject.toml \
+                "src/$PACKAGE_NAME/__init__.py" \
+                "src/$PACKAGE_NAME/_api"
+            )
+            if (( ${#changed[@]} > 0 )); then
+              build_needed=true
+              reason="relevant docs/examples/public-API source changed"
+              printf 'Relevant changes since %s:\n' "$published_sha"
+              printf '  %s\n' "${changed[@]}"
+            fi
+          fi
+
+          {
+            echo "target-ref=$target_ref"
+            echo "target-sha=$target_sha"
+            echo "build-needed=$build_needed"
+          } >> "$GITHUB_OUTPUT"
+
+          printf 'Target release: %s (%s)\n' "$target_ref" "$target_sha"
+          printf 'Published source: %s\n' "${published_sha:-none}"
+          printf 'Decision: %s (%s)\n' "$build_needed" "$reason"
+
+      - name: Report manual publication requirement
+        if: ${{ steps.plan.outputs.build-needed == 'true' && inputs.live-mode == 'manual' && github.event_name != 'workflow_dispatch' }}
+        run: echo '::warning::Live documentation is stale for this release. Run the Docs workflow manually when the required local services are available.'
+
+  build:
+    name: live build
+    needs: plan
+    if: ${{ needs.plan.outputs.build-needed == 'true' && (inputs.live-mode == 'release' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ${{ inputs.docs-runner }}
+    steps:
+      - name: Check out exact release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.target-ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+
+      - name: Create read-only GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TERNFORGE_SOURCE_READ_CLIENT_ID }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: read
+
+      - name: Synchronize the locked environment
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: url.https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
+        run: uv sync --locked --all-groups --python "${{ inputs.python-version }}"
+
+      - name: Build live Sphinx-Gallery documentation
+        env:
+          LOCAL_ENVIRONMENT: ${{ inputs.local-environment }}
+          SPHINX_ENABLE_INTERSPHINX: "1"
+        run: |
+          set -euo pipefail
+          rm -rf docs/_build docs/auto_examples docs/generated docs/sg_execution_times.rst test-results/sphinx-gallery
+          output="$RUNNER_TEMP/docs-html"
+          rm -rf "$output"
+
+          build=(uv run --no-sync sphinx-build -W --keep-going -b html docs "$output")
+          if [[ "$LOCAL_ENVIRONMENT" == true ]]; then
+            command -v direnv >/dev/null
+            direnv allow .
+            direnv exec . env SPHINX_ENABLE_INTERSPHINX=1 "${build[@]}"
+          else
+            "${build[@]}"
+          fi
+
+      - name: Write immutable docs source metadata
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/docs-html
+          TARGET_REF: ${{ needs.plan.outputs.target-ref }}
+          TARGET_SHA: ${{ needs.plan.outputs.target-sha }}
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          payload = {
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "source_ref": os.environ["TARGET_REF"],
+              "source_sha": os.environ["TARGET_SHA"],
+              "built_at": datetime.now(UTC).isoformat(),
+              "live_examples": True,
+          }
+          target = Path(os.environ["OUTPUT_DIR"]) / "ternforge-docs.json"
+          target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
+      - name: Upload Sphinx-Gallery JUnit evidence
+        if: ${{ hashFiles('test-results/sphinx-gallery/junit.xml') != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sphinx-gallery-junit-${{ needs.plan.outputs.target-ref }}
+          path: test-results/sphinx-gallery/junit.xml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ${{ runner.temp }}/docs-html
+
+  deploy:
+    name: deploy
+    needs: [plan, build]
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=/dev/null
+source "$ROOT_DIR/live-docs/versions.env"
+
+RUNNER_LABEL="ternforge-docs-local"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/ternforge-live-docs"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/ternforge-live-docs"
+RUNNER_PROCESS=""
+RUNNER_NAME=""
+REPOSITORY=""
+RUN_DIR=""
+
+log() { printf 'ternforge-live-docs: %s\n' "$*"; }
+die() { printf 'ternforge-live-docs: %s\n' "$*" >&2; exit 1; }
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  ternforge-live-docs publish OWNER/REPO [TAG] [--force]
+
+Publishes live Sphinx-Gallery docs through the repository's Ternforge Docs
+workflow. The live build runs once on this trusted macOS host; GitHub-hosted
+Actions performs planning and the final Pages deployment.
+USAGE
+}
+
+cleanup() {
+  local rc=$?
+  if [[ -n "$RUNNER_PROCESS" ]] && kill -0 "$RUNNER_PROCESS" 2>/dev/null; then
+    kill "$RUNNER_PROCESS" 2>/dev/null || true
+    wait "$RUNNER_PROCESS" 2>/dev/null || true
+  fi
+  if [[ -n "$REPOSITORY" && -n "$RUNNER_NAME" ]]; then
+    runner_id="$(gh api "repos/$REPOSITORY/actions/runners" --jq ".runners[] | select(.name == \"$RUNNER_NAME\") | .id" 2>/dev/null || true)"
+    if [[ -n "$runner_id" ]]; then
+      gh api -X DELETE "repos/$REPOSITORY/actions/runners/$runner_id" >/dev/null 2>&1 || true
+    fi
+  fi
+  if [[ -n "$RUN_DIR" && -d "$RUN_DIR/_diag" ]]; then
+    mkdir -p "$STATE_DIR/logs"
+    log_dir="$STATE_DIR/logs/$(basename "$RUN_DIR")"
+    rm -rf "$log_dir"
+    cp -R "$RUN_DIR/_diag" "$log_dir"
+  fi
+  [[ -z "$RUN_DIR" ]] || rm -rf "$RUN_DIR"
+  exit "$rc"
+}
+trap cleanup EXIT INT TERM
+
+require_host() {
+  [[ "$(uname -s)" == Darwin ]] || die "local live docs currently require macOS"
+  [[ "$(uname -m)" == arm64 ]] || die "local live docs currently require Apple Silicon"
+  for tool in curl gh jq shasum tar; do
+    command -v "$tool" >/dev/null || die "$tool is required"
+  done
+  gh auth status >/dev/null 2>&1 || die "GitHub CLI authentication is required"
+}
+
+ensure_runner_archive() {
+  mkdir -p "$CACHE_DIR"
+  RUNNER_ARCHIVE="$CACHE_DIR/actions-runner-osx-arm64-$DOCS_RUNNER_VERSION.tar.gz"
+  if [[ ! -f "$RUNNER_ARCHIVE" ]] || ! printf '%s  %s\n' "$DOCS_RUNNER_SHA256" "$RUNNER_ARCHIVE" | shasum -a 256 -c - >/dev/null 2>&1; then
+    log "downloading pinned GitHub Actions runner v$DOCS_RUNNER_VERSION"
+    tmp="$RUNNER_ARCHIVE.tmp"
+    rm -f "$tmp"
+    curl -fL --retry 3 -o "$tmp" \
+      "https://github.com/actions/runner/releases/download/v$DOCS_RUNNER_VERSION/actions-runner-osx-arm64-$DOCS_RUNNER_VERSION.tar.gz"
+    printf '%s  %s\n' "$DOCS_RUNNER_SHA256" "$tmp" | shasum -a 256 -c - >/dev/null
+    mv "$tmp" "$RUNNER_ARCHIVE"
+  fi
+}
+
+wait_runner_online() {
+  local status
+  for _ in {1..30}; do
+    status="$(gh api "repos/$REPOSITORY/actions/runners" --jq ".runners[] | select(.name == \"$RUNNER_NAME\") | .status" 2>/dev/null || true)"
+    [[ "$status" == online ]] && return 0
+    sleep 1
+  done
+  return 1
+}
+
+latest_run_id() {
+  gh run list -R "$REPOSITORY" --workflow docs.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId // empty' 2>/dev/null || true
+}
+
+publish() {
+  local tag="" force=false before_run run_id registration
+  REPOSITORY="${1:-}"
+  shift || true
+  [[ "$REPOSITORY" =~ ^[^/]+/[^/]+$ ]] || die "repository must be OWNER/REPO"
+
+  while (($#)); do
+    case "$1" in
+      --force) force=true ;;
+      -h|--help) usage; return 0 ;;
+      *)
+        [[ -z "$tag" ]] || die "unexpected argument: $1"
+        tag="$1"
+        ;;
+    esac
+    shift
+  done
+
+  require_host
+  if [[ -z "$tag" ]]; then
+    tag="$(gh release view -R "$REPOSITORY" --json tagName --jq .tagName)"
+  fi
+  gh release view "$tag" -R "$REPOSITORY" >/dev/null
+  [[ "$(gh variable get TERNFORGE_DOCS_MODE -R "$REPOSITORY" 2>/dev/null || true)" == manual ]] \
+    || die "$REPOSITORY is not configured for manual Ternforge live docs"
+  [[ "$(gh variable get TERNFORGE_DOCS_RUNNER -R "$REPOSITORY" 2>/dev/null || true)" == "$RUNNER_LABEL" ]] \
+    || die "$REPOSITORY does not route live docs to $RUNNER_LABEL"
+  gh workflow view docs.yml -R "$REPOSITORY" >/dev/null
+
+  ensure_runner_archive
+  mkdir -p "$STATE_DIR/runs"
+  RUN_DIR="$(mktemp -d "$STATE_DIR/runs/$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")"
+  tar -xzf "$RUNNER_ARCHIVE" -C "$RUN_DIR"
+
+  RUNNER_NAME="ternforge-docs-${REPOSITORY#*/}-$$"
+  registration="$(gh api -X POST "repos/$REPOSITORY/actions/runners/registration-token" --jq .token)"
+  [[ -n "$registration" ]] || die "runner registration token unavailable"
+
+  (
+    cd "$RUN_DIR"
+    ./config.sh --unattended --ephemeral --disableupdate \
+      --url "https://github.com/$REPOSITORY" \
+      --token "$registration" \
+      --name "$RUNNER_NAME" \
+      --labels "$RUNNER_LABEL" \
+      --work _work >/dev/null
+  )
+
+  log "starting one-job runner $RUNNER_NAME"
+  (cd "$RUN_DIR" && ./run.sh) &
+  RUNNER_PROCESS=$!
+  wait_runner_online || die "ephemeral runner did not become online"
+
+  before_run="$(latest_run_id)"
+  log "dispatching $REPOSITORY docs for $tag"
+  gh workflow run docs.yml -R "$REPOSITORY" --ref main -f ref="$tag" -f force="$force"
+
+  run_id=""
+  for _ in {1..30}; do
+    candidate="$(latest_run_id)"
+    if [[ -n "$candidate" && "$candidate" != "$before_run" ]]; then
+      run_id="$candidate"
+      break
+    fi
+    sleep 1
+  done
+  [[ -n "$run_id" ]] || die "could not identify dispatched Docs workflow run"
+  log "workflow run: https://github.com/$REPOSITORY/actions/runs/$run_id"
+
+  wait "$RUNNER_PROCESS"
+  RUNNER_PROCESS=""
+  gh run watch "$run_id" -R "$REPOSITORY" --exit-status
+  log "published $tag"
+}
+
+case "${1:-}" in
+  publish)
+    shift
+    publish "$@"
+    ;;
+  -h|--help|help|"")
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
