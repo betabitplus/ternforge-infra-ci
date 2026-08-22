@@ -189,7 +189,7 @@ jobs:
           TARGET_REF: ${{ needs.plan.outputs.target-ref }}
           TARGET_SHA: ${{ needs.plan.outputs.target-sha }}
         run: |
-          python - <<'PY'
+          uv run --no-sync python - <<'PY'
           from __future__ import annotations
 
           import json
