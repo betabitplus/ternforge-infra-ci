@@ -208,12 +208,21 @@ jobs:
           target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
 
+      - name: Detect Sphinx-Gallery JUnit evidence
+        id: junit
+        run: |
+          if [[ -s "$RUNNER_TEMP/test-results/sphinx-gallery/junit.xml" ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload Sphinx-Gallery JUnit evidence
-        if: ${{ hashFiles('test-results/sphinx-gallery/junit.xml') != '' }}
+        if: ${{ steps.junit.outputs.present == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sphinx-gallery-junit-${{ needs.plan.outputs.target-ref }}
-          path: test-results/sphinx-gallery/junit.xml
+          path: ${{ runner.temp }}/test-results/sphinx-gallery/junit.xml
           if-no-files-found: error
           retention-days: 30
 
