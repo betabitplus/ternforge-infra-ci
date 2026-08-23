@@ -14,9 +14,10 @@ Shared CI and release building blocks for Ternforge repositories.
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
 - `.github/workflows/python-library-docs.yml` publishes exact release tags to
-  GitHub Pages only when docs, examples, or the supported public Python surface
-  changed since the last published site. `manual` mode reports stale docs on a
-  release and waits for an explicit live run; `release` mode builds automatically.
+  GitHub Pages only when docs, examples, the supported public Python surface, or
+  the effective runtime/docs dependency environment changed since the last
+  published site. `manual` mode reports stale docs on a release and waits for an
+  explicit live run; `release` mode builds automatically.
 
 Consumers pin shared automation to a full 40-character commit SHA and retain a
 human-readable release-tag comment next to the pin. Repository lifecycle and
