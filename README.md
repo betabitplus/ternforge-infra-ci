@@ -26,4 +26,6 @@ The optional private-repository personal-Mac fallback is documented in
 [`local-ci/README.md`](local-ci/README.md). GitHub-hosted execution remains the
 default when `TERNFORGE_RUNNER` is absent. Environment-bound live docs can use
 `bin/ternforge-live-docs publish OWNER/REPO`, which creates a one-job ephemeral
-macOS runner and leaves the final Pages deployment on GitHub-hosted Actions.
+macOS runner and leaves Pages packaging/deployment on GitHub-hosted Actions. The
+helper pins a Node-24-compatible Actions Runner so current artifact actions do not
+depend on whatever runner version happens to be installed on the host.
