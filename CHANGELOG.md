@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.4](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.3...v5.4.4) (2026-08-23)
+
+
+### Bug Fixes
+
+* document live docs runner compatibility ([#138](https://github.com/betabitplus/ternforge-infra-ci/issues/138)) ([bcbb1ce](https://github.com/betabitplus/ternforge-infra-ci/commit/bcbb1ce47d29bae9deabe18edc7108390f54631c))
+
 ## [5.4.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.2...v5.4.3) (2026-08-22)
 
 
