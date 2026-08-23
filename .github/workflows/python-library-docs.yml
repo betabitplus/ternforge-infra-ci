@@ -54,6 +54,7 @@ jobs:
       build-needed: ${{ steps.plan.outputs.build-needed }}
       target-ref: ${{ steps.plan.outputs.target-ref }}
       target-sha: ${{ steps.plan.outputs.target-sha }}
+      environment-sha256: ${{ steps.plan.outputs.environment-sha256 }}
     steps:
       - name: Check out repository history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,12 +63,18 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+
       - name: Decide whether published docs are stale
         id: plan
         env:
           FORCE: ${{ inputs.force }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGE_NAME: ${{ inputs.package-name }}
+          PYTHON_VERSION: ${{ inputs.python-version }}
           TARGET_REF_INPUT: ${{ inputs.target-ref }}
         run: |
           set -euo pipefail
@@ -80,15 +87,18 @@ jobs:
           target_sha="$(git rev-parse "refs/tags/$target_ref^{commit}")"
 
           published_sha=""
+          published_environment_sha256=""
           pages_url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null || true)"
           if [[ -n "$pages_url" ]]; then
             metadata="$(curl -fsSL --max-time 10 "${pages_url%/}/ternforge-docs.json?run=$GITHUB_RUN_ID" 2>/dev/null || true)"
             if [[ -n "$metadata" ]] && jq -e . >/dev/null 2>&1 <<<"$metadata"; then
               published_sha="$(jq -r '.source_sha // empty' <<<"$metadata")"
+              published_environment_sha256="$(jq -r '.environment_sha256 // empty' <<<"$metadata")"
             fi
           fi
 
           build_needed=false
+          environment_sha256=""
           reason="published docs already cover the relevant surface"
           if [[ "$FORCE" == true ]]; then
             build_needed=true
@@ -114,16 +124,49 @@ jobs:
               printf 'Relevant changes since %s:\n' "$published_sha"
               printf '  %s\n' "${changed[@]}"
             fi
+
+            if [[ "$build_needed" == false ]]; then
+              target_worktree="$RUNNER_TEMP/ternforge-docs-target"
+              rm -rf "$target_worktree"
+              git worktree add --detach "$target_worktree" "$target_sha" >/dev/null
+              environment_sha256="$(
+                uv export \
+                  --project "$target_worktree" \
+                  --frozen \
+                  --no-dev \
+                  --group docs \
+                  --no-hashes \
+                  --no-header \
+                  --no-annotate \
+                  --no-emit-project \
+                  --python "$PYTHON_VERSION" \
+                | LC_ALL=C sort \
+                | shasum -a 256 \
+                | cut -d' ' -f1
+              )"
+              git worktree remove --force "$target_worktree"
+
+              if [[ -z "$published_environment_sha256" ]]; then
+                build_needed=true
+                reason="published docs metadata predates dependency-environment fingerprinting"
+              elif [[ "$published_environment_sha256" != "$environment_sha256" ]]; then
+                build_needed=true
+                reason="runtime/docs dependency environment changed"
+              fi
+            fi
           fi
 
           {
             echo "target-ref=$target_ref"
             echo "target-sha=$target_sha"
             echo "build-needed=$build_needed"
+            echo "environment-sha256=$environment_sha256"
           } >> "$GITHUB_OUTPUT"
 
           printf 'Target release: %s (%s)\n' "$target_ref" "$target_sha"
           printf 'Published source: %s\n' "${published_sha:-none}"
+          printf 'Published environment: %s\n' "${published_environment_sha256:-none}"
+          printf 'Target environment: %s\n' "${environment_sha256:-not-needed}"
           printf 'Decision: %s (%s)\n' "$build_needed" "$reason"
 
       - name: Report manual publication requirement
@@ -162,7 +205,7 @@ jobs:
           GIT_CONFIG_COUNT: "1"
           GIT_CONFIG_KEY_0: url.https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
-        run: uv sync --locked --all-groups --python "${{ inputs.python-version }}"
+        run: uv sync --locked --no-dev --group docs --python "${{ inputs.python-version }}"
 
       - name: Build live Sphinx-Gallery documentation
         env:
@@ -185,10 +228,29 @@ jobs:
 
       - name: Write immutable docs source metadata
         env:
+          ENVIRONMENT_SHA256: ${{ needs.plan.outputs.environment-sha256 }}
           OUTPUT_DIR: ${{ runner.temp }}/docs-html
           TARGET_REF: ${{ needs.plan.outputs.target-ref }}
           TARGET_SHA: ${{ needs.plan.outputs.target-sha }}
         run: |
+          if [[ -z "$ENVIRONMENT_SHA256" ]]; then
+            ENVIRONMENT_SHA256="$(
+              uv export \
+                --frozen \
+                --no-dev \
+                --group docs \
+                --no-hashes \
+                --no-header \
+                --no-annotate \
+                --no-emit-project \
+                --python "${{ inputs.python-version }}" \
+              | LC_ALL=C sort \
+              | shasum -a 256 \
+              | cut -d' ' -f1
+            )"
+            export ENVIRONMENT_SHA256
+          fi
+
           uv run --no-sync python - <<'PY'
           from __future__ import annotations
 
@@ -201,6 +263,7 @@ jobs:
               "repository": os.environ["GITHUB_REPOSITORY"],
               "source_ref": os.environ["TARGET_REF"],
               "source_sha": os.environ["TARGET_SHA"],
+              "environment_sha256": os.environ["ENVIRONMENT_SHA256"],
               "built_at": datetime.now(UTC).isoformat(),
               "live_examples": True,
           }
