@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.5](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.4...v5.4.5) (2026-08-23)
+
+
+### Bug Fixes
+
+* fingerprint live docs environment ([#140](https://github.com/betabitplus/ternforge-infra-ci/issues/140)) ([986d498](https://github.com/betabitplus/ternforge-infra-ci/commit/986d498ee61752c26127e8583831edab3471074d))
+
 ## [5.4.4](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.3...v5.4.4) (2026-08-23)
 
 
