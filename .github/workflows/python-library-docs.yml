@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: ubuntu-24.04
+      playwright-browsers:
+        description: Optional space-separated Playwright install targets required by live examples.
+        required: false
+        type: string
+        default: ""
       local-environment:
         description: Load the repository's trusted direnv environment before live execution.
         required: false
@@ -206,6 +211,15 @@ jobs:
           GIT_CONFIG_KEY_0: url.https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
         run: uv sync --locked --no-dev --group docs --python "${{ inputs.python-version }}"
+
+      - name: Install Playwright browsers
+        if: inputs.playwright-browsers != ''
+        env:
+          PLAYWRIGHT_BROWSERS: ${{ inputs.playwright-browsers }}
+        run: |
+          set -euo pipefail
+          read -r -a browsers <<<"$PLAYWRIGHT_BROWSERS"
+          uv run --no-sync playwright install --with-deps "${browsers[@]}"
 
       - name: Build live Sphinx-Gallery documentation
         env:
