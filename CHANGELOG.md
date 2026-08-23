@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.6](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.5...v5.4.6) (2026-08-23)
+
+
+### Bug Fixes
+
+* support Playwright browsers in live docs ([#143](https://github.com/betabitplus/ternforge-infra-ci/issues/143)) ([2721b69](https://github.com/betabitplus/ternforge-infra-ci/commit/2721b6989943696cced1dc3351791336c73d437d))
+
 ## [5.4.5](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.4...v5.4.5) (2026-08-23)
 
 
