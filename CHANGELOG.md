@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.4.7](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.6...v5.4.7) (2026-08-24)
+
+
+### Bug Fixes
+
+* ignore version-only docs changes ([#146](https://github.com/betabitplus/ternforge-infra-ci/issues/146)) ([14b0dd9](https://github.com/betabitplus/ternforge-infra-ci/commit/14b0dd9a8d46365e24a2a08edc4324efb353d706))
+
 ## [5.4.6](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.5...v5.4.6) (2026-08-23)
 
 
