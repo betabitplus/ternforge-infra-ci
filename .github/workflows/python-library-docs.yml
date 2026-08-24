@@ -119,7 +119,6 @@ jobs:
               git diff --name-only "$published_sha" "$target_sha" -- \
                 docs \
                 examples \
-                pyproject.toml \
                 "src/$PACKAGE_NAME/__init__.py" \
                 "src/$PACKAGE_NAME/_api"
             )
@@ -128,6 +127,17 @@ jobs:
               reason="relevant docs/examples/public-API source changed"
               printf 'Relevant changes since %s:\n' "$published_sha"
               printf '  %s\n' "${changed[@]}"
+            fi
+
+            if [[ "$build_needed" == false ]]; then
+              pyproject_changed="$(
+                python3 -c 'import subprocess, sys, tomllib; a = tomllib.loads(subprocess.check_output(["git", "show", f"{sys.argv[1]}:pyproject.toml"], text=True)); b = tomllib.loads(subprocess.check_output(["git", "show", f"{sys.argv[2]}:pyproject.toml"], text=True)); a.get("project", {}).pop("version", None); b.get("project", {}).pop("version", None); print("true" if a != b else "false")' \
+                  "$published_sha" "$target_sha"
+              )"
+              if [[ "$pyproject_changed" == true ]]; then
+                build_needed=true
+                reason="project configuration changed"
+              fi
             fi
 
             if [[ "$build_needed" == false ]]; then
