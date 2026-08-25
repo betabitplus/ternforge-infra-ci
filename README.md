@@ -7,16 +7,22 @@ Shared CI and release building blocks for Ternforge repositories.
 - `.github/workflows/python-library.yml` runs the direct locked Python-library
   quality, security, test, offline documentation, audit, build, metadata,
   manifest, and isolated artifact checks behind the stable `ci / required`
-  interface. Repositories with `docs/conf.py` build Sphinx-Gallery pages with
-  live example execution disabled; repositories not yet migrated to Sphinx skip
-  that step.
+  interface. Repositories with `features/**/*.feature` replay their living
+  specifications with VCR in `none` mode and network blocking, apply Allure's
+  built-in zero-failure quality gate, and retain the raw Allure evidence for 30
+  days. Repositories with `docs/conf.py` build Sphinx-Gallery pages with live
+  example execution disabled; repositories not yet migrated to Sphinx skip that
+  step.
 - `.github/actions/release/action.yml` runs Release Please with a short-lived
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
 - `.github/workflows/python-library-docs.yml` publishes exact release tags to
-  GitHub Pages only when docs, examples, the supported public Python surface, or
-  the effective runtime/docs dependency environment changed since the last
-  published site. `manual` mode reports stale docs on a release and waits for an
+  GitHub Pages only when docs, examples, the supported public Python surface,
+  living-specification inputs, or the effective docs/specifications dependency
+  environment changed since the last published site. When features exist, the
+  same Pages artifact also contains an Allure 3 Awesome report at
+  `/specifications/`, with native `history.jsonl` trends and a zero-failure
+  quality gate. `manual` mode reports stale docs on a release and waits for an
   explicit live run; `release` mode builds automatically.
 
 Consumers pin shared automation to a full 40-character commit SHA and retain a
