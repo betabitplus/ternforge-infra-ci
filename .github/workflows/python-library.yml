@@ -64,6 +64,12 @@ jobs:
         with:
           version-file: pyproject.toml
 
+      - name: Set up Node for Allure
+        if: ${{ hashFiles('features/**/*.feature') != '' }}
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: "24"
+
       - name: Create read-only GitHub App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -81,7 +87,8 @@ jobs:
       - name: Synchronize the locked environment once
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: uv sync --locked --all-groups --python "${{ inputs.python-version }}"
+          PYTHON_VERSION: ${{ inputs.python-version }}
+        run: uv sync --locked --all-groups --python "$PYTHON_VERSION"
 
       - name: Install Playwright browsers
         if: inputs.playwright-browsers != ''
@@ -129,7 +136,44 @@ jobs:
           uv run --no-sync deptry .
 
       - name: Test
-        run: uv run --no-sync pytest -n 2
+        run: uv run --no-sync pytest -n 2 -m "not specification"
+
+      - name: Replay living specifications
+        id: specifications
+        if: ${{ hashFiles('features/**/*.feature') != '' }}
+        env:
+          ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
+        run: |
+          set -euo pipefail
+          rm -rf "$ALLURE_RESULTS_DIR"
+          uv run --no-sync pytest \
+            -m specification \
+            --record-mode=none \
+            --block-network \
+            --alluredir="$ALLURE_RESULTS_DIR"
+
+      - name: Apply living specifications quality gate
+        if: ${{ always() && steps.specifications.outcome != 'skipped' }}
+        env:
+          ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
+          # renovate: datasource=npm depName=allure
+          ALLURE_VERSION: 3.15.0
+        run: >-
+          npx --yes "allure@${ALLURE_VERSION}" quality-gate
+          "$ALLURE_RESULTS_DIR"
+          --cwd "$RUNNER_TEMP"
+          --max-failures 0
+          --min-tests-count 1
+          --success-rate 1
+
+      - name: Upload living specifications evidence
+        if: ${{ always() && steps.specifications.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: living-specifications-allure-results
+          path: ${{ runner.temp }}/allure-results
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Build documentation without live example execution
         if: ${{ hashFiles('docs/conf.py') != '' }}
