@@ -359,7 +359,7 @@ jobs:
         env:
           ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
           # renovate: datasource=npm depName=allure
-          ALLURE_VERSION: 3.15.0
+          ALLURE_VERSION: 3.16.0
         run: >-
           npx --yes "allure@${ALLURE_VERSION}" quality-gate
           "$ALLURE_RESULTS_DIR"
@@ -376,7 +376,7 @@ jobs:
           DOCS_OUTPUT_DIR: ${{ runner.temp }}/docs-html
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # renovate: datasource=npm depName=allure
-          ALLURE_VERSION: 3.15.0
+          ALLURE_VERSION: 3.16.0
         run: |
           set -euo pipefail
           history="$RUNNER_TEMP/specifications-history.jsonl"

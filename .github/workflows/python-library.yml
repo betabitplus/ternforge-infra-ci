@@ -160,7 +160,7 @@ jobs:
         env:
           ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
           # renovate: datasource=npm depName=allure
-          ALLURE_VERSION: 3.15.0
+          ALLURE_VERSION: 3.16.0
         run: >-
           npx --yes "allure@${ALLURE_VERSION}" quality-gate
           "$ALLURE_RESULTS_DIR"
