@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.7...v5.5.0) (2026-08-25)
+
+
+### Features
+
+* publish living specifications ([#148](https://github.com/betabitplus/ternforge-infra-ci/issues/148)) ([7913bf0](https://github.com/betabitplus/ternforge-infra-ci/commit/7913bf03ae191e2684e9af5a0f1f39f4cb859b8f))
+
 ## [5.4.7](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.6...v5.4.7) (2026-08-24)
 
 
