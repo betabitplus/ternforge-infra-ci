@@ -147,6 +147,9 @@ jobs:
           set -euo pipefail
           rm -rf "$ALLURE_RESULTS_DIR"
           uv run --no-sync pytest \
+            -o addopts= \
+            --strict-markers \
+            tests/*/bdd \
             -m specification \
             --record-mode=none \
             --block-network \

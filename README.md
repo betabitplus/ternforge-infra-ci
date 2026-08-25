@@ -7,12 +7,13 @@ Shared CI and release building blocks for Ternforge repositories.
 - `.github/workflows/python-library.yml` runs the direct locked Python-library
   quality, security, test, offline documentation, audit, build, metadata,
   manifest, and isolated artifact checks behind the stable `ci / required`
-  interface. Repositories with `features/**/*.feature` replay their living
-  specifications with VCR in `none` mode and network blocking, apply Allure's
-  built-in zero-failure quality gate, and retain the raw Allure evidence for 30
-  days. Repositories with `docs/conf.py` build Sphinx-Gallery pages with live
-  example execution disabled; repositories not yet migrated to Sphinx skip that
-  step.
+  interface. Repositories with `features/**/*.feature` replay only their
+  canonical `tests/*/bdd` living-specification bindings with VCR in `none` mode
+  and network blocking; that dedicated replay ignores unrelated project-wide
+  pytest `addopts`, applies Allure's built-in zero-failure quality gate, and
+  retains the raw Allure evidence for 30 days. Repositories with `docs/conf.py`
+  build Sphinx-Gallery pages with live example execution disabled; repositories
+  not yet migrated to Sphinx skip that step.
 - `.github/actions/release/action.yml` runs Release Please with a short-lived
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
