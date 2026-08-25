@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.5.0...v5.5.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* isolate living specifications replay ([#155](https://github.com/betabitplus/ternforge-infra-ci/issues/155)) ([aee624c](https://github.com/betabitplus/ternforge-infra-ci/commit/aee624c82a7574f05fe128fd30baca273098ff6c))
+
 ## [5.5.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.4.7...v5.5.0) (2026-08-25)
 
 
