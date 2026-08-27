@@ -182,6 +182,7 @@ jobs:
           ==================
 
           .. test-file:: Pytest CI evidence
+             :id: PYTEST_CI_EVIDENCE
              :file: _traceability/ci-pytest.xml
              :auto_suites:
              :auto_cases:
