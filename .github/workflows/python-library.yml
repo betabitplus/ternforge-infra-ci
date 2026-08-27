@@ -129,12 +129,65 @@ jobs:
           uv run --no-sync interrogate --fail-under 100 src
           uv run --no-sync deptry .
 
-      - name: Test
-        run: uv run --no-sync pytest -n 2
+      - name: Test and collect evidence
+        env:
+          COVERAGE_FILE: ${{ runner.temp }}/ternforge-evidence/.coverage
+          EVIDENCE_DIR: ${{ runner.temp }}/ternforge-evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR/allure-results"
+
+          status=0
+          uv run --no-sync pytest \
+            -n 2 \
+            --junitxml "$EVIDENCE_DIR/pytest-junit.xml" \
+            --alluredir "$EVIDENCE_DIR/allure-results" \
+            --cov-context=test || status=$?
+
+          if [[ -f "$COVERAGE_FILE" ]]; then
+            uv run --no-sync coverage json \
+              --show-contexts \
+              -o "$EVIDENCE_DIR/coverage.json"
+          fi
+
+          if [[ "$status" -eq 0 ]]; then
+            test -s "$EVIDENCE_DIR/pytest-junit.xml"
+            test -f "$COVERAGE_FILE"
+            test -s "$EVIDENCE_DIR/coverage.json"
+          fi
+          exit "$status"
+
+      - name: Upload test evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: python-test-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/ternforge-evidence
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
 
       - name: Build documentation without live example execution
         if: ${{ hashFiles('docs/conf.py') != '' }}
         run: |
+          set -euo pipefail
+          trace_source="docs/ci-pytest-evidence.rst"
+          trace_junit="docs/_traceability/ci-pytest.xml"
+          mkdir -p docs/_traceability
+          cp "$RUNNER_TEMP/ternforge-evidence/pytest-junit.xml" "$trace_junit"
+          cat >"$trace_source" <<'RST'
+          :orphan:
+
+          CI pytest evidence
+          ==================
+
+          .. test-file:: Pytest CI evidence
+             :file: _traceability/ci-pytest.xml
+             :auto_suites:
+             :auto_cases:
+          RST
+          trap 'rm -f "$trace_source" "$trace_junit"' EXIT
+
           uv run --no-sync sphinx-build \
             -W \
             --keep-going \
