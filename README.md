@@ -7,24 +7,25 @@ Shared CI and release building blocks for Ternforge repositories.
 - `.github/workflows/python-library.yml` runs the direct locked Python-library
   quality, security, test, offline documentation, audit, build, metadata,
   manifest, and isolated artifact checks behind the stable `ci / required`
-  interface. Repositories with `features/**/*.feature` replay only their
-  canonical `tests/*/bdd` living-specification bindings with VCR in `none` mode
-  and network blocking; that dedicated replay ignores unrelated project-wide
-  pytest `addopts`, applies Allure's built-in zero-failure quality gate, and
-  retains the raw Allure evidence for 30 days. Repositories with `docs/conf.py`
+  interface. Its single pytest invocation emits JUnit, raw Allure results, and
+  coverage.py dynamic contexts. The same job imports that JUnit through
+  Sphinx-Test-Reports before the Sphinx-Needs build, so requirements, source
+  implementation markers, and verification evidence are validated as one graph.
+  Raw test evidence is retained for 30 days. Repositories with `docs/conf.py`
   build Sphinx-Gallery pages with live example execution disabled; repositories
   not yet migrated to Sphinx skip that step.
 - `.github/actions/release/action.yml` runs Release Please with a short-lived
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
 - `.github/workflows/python-library-docs.yml` publishes exact release tags to
-  GitHub Pages only when docs, examples, the supported public Python surface,
-  living-specification inputs, or the effective docs/specifications dependency
-  environment changed since the last published site. When features exist, the
-  same Pages artifact also contains an Allure 3 Awesome report at
-  `/specifications/`, with native `history.jsonl` trends and a zero-failure
-  quality gate. `manual` mode reports stale docs on a release and waits for an
-  explicit live run; `release` mode builds automatically.
+  GitHub Pages when documentation, examples, requirements, tests, features,
+  implementation source, or the full locked evidence/docs environment changed
+  since the last published site. The release build runs pytest once, imports its
+  JUnit through Sphinx-Test-Reports, scans source implementation markers through
+  Sphinx-CodeLinks, and validates the same Sphinx-Needs graph before publishing.
+  Raw pytest, Allure, and coverage-context evidence is retained for 30 days.
+  `manual` mode reports stale docs on a release and waits for an explicit live
+  run; `release` mode builds automatically.
 
 Consumers pin shared automation to a full 40-character commit SHA and retain a
 human-readable release-tag comment next to the pin. Repository lifecycle and
