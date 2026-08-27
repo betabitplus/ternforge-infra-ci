@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.5.2...v5.6.0) (2026-08-27)
+
+
+### Features
+
+* unify Python evidence flow ([#160](https://github.com/betabitplus/ternforge-infra-ci/issues/160)) ([d314220](https://github.com/betabitplus/ternforge-infra-ci/commit/d314220fc9d78c5e9bcba6ba044245a45364ed59))
+
 ## [5.5.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.5.1...v5.5.2) (2026-08-27)
 
 
