@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.6.0...v5.6.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* stabilize pytest evidence need id ([#162](https://github.com/betabitplus/ternforge-infra-ci/issues/162)) ([0989028](https://github.com/betabitplus/ternforge-infra-ci/commit/0989028b70b9751967ec8be8c2b7e5caec47d208))
+
 ## [5.6.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.5.2...v5.6.0) (2026-08-27)
 
 
