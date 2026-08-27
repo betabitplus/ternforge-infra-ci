@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.5.1...v5.5.2) (2026-08-27)
+
+
+### Bug Fixes
+
+* remove standalone specifications pipeline ([#157](https://github.com/betabitplus/ternforge-infra-ci/issues/157)) ([709e9cf](https://github.com/betabitplus/ternforge-infra-ci/commit/709e9cf68656d35d33b2dfd55422d413e0e0d943))
+
 ## [5.5.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.5.0...v5.5.1) (2026-08-25)
 
 
