@@ -121,25 +121,12 @@ jobs:
               "src/$PACKAGE_NAME/__init__.py"
               "src/$PACKAGE_NAME/_api"
             )
-            specifications_present=false
-            if git ls-tree -r --name-only "$target_sha" -- features | grep -qE '[.]feature$'; then
-              specifications_present=true
-              relevant_paths+=(
-                features
-                "src/$PACKAGE_NAME"
-                tests/conftest.py
-                "tests/$PACKAGE_NAME/conftest.py"
-                "tests/$PACKAGE_NAME/bdd"
-                "tests/$PACKAGE_NAME/data"
-                "tests/$PACKAGE_NAME/support"
-              )
-            fi
             mapfile -t changed < <(
               git diff --name-only "$published_sha" "$target_sha" -- "${relevant_paths[@]}"
             )
             if (( ${#changed[@]} > 0 )); then
               build_needed=true
-              reason="relevant docs/examples/public-API/specification source changed"
+              reason="relevant docs/examples/public-API source changed"
               printf 'Relevant changes since %s:\n' "$published_sha"
               printf '  %s\n' "${changed[@]}"
             fi
@@ -160,9 +147,6 @@ jobs:
               rm -rf "$target_worktree"
               git worktree add --detach "$target_worktree" "$target_sha" >/dev/null
               export_groups=(--group docs)
-              if [[ "$specifications_present" == true ]]; then
-                export_groups+=(--group specifications)
-              fi
               environment_sha256="$(
                 uv export \
                   --project "$target_worktree" \
@@ -185,7 +169,7 @@ jobs:
                 reason="published docs metadata predates dependency-environment fingerprinting"
               elif [[ "$published_environment_sha256" != "$environment_sha256" ]]; then
                 build_needed=true
-                reason="runtime/docs/specifications dependency environment changed"
+                reason="runtime/docs dependency environment changed"
               fi
             fi
           fi
@@ -225,12 +209,6 @@ jobs:
         with:
           version-file: pyproject.toml
 
-      - name: Set up Node for Allure
-        if: ${{ hashFiles('features/**/*.feature') != '' }}
-        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
-        with:
-          node-version: "24"
-
       - name: Create read-only GitHub App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -248,11 +226,7 @@ jobs:
           PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
           set -euo pipefail
-          sync_args=(--locked --no-dev --group docs --python "$PYTHON_VERSION")
-          if find features -type f -name '*.feature' -print -quit 2>/dev/null | grep -q .; then
-            sync_args+=(--group specifications)
-          fi
-          uv sync "${sync_args[@]}"
+          uv sync --locked --no-dev --group docs --python "$PYTHON_VERSION"
 
       - name: Install Playwright browsers
         if: inputs.playwright-browsers != ''
@@ -282,140 +256,6 @@ jobs:
             "${build[@]}"
           fi
 
-      - name: Replay living specifications
-        id: specifications
-        if: ${{ hashFiles('features/**/*.feature') != '' }}
-        env:
-          ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
-        run: |
-          set -euo pipefail
-          rm -rf "$ALLURE_RESULTS_DIR"
-          uv run --no-sync pytest \
-            -o addopts= \
-            --strict-markers \
-            tests/*/bdd \
-            -m specification \
-            --record-mode=none \
-            --block-network \
-            --alluredir="$ALLURE_RESULTS_DIR"
-
-      - name: Write living specifications launch metadata
-        if: ${{ steps.specifications.outcome == 'success' }}
-        env:
-          ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET_REF: ${{ needs.plan.outputs.target-ref }}
-          TARGET_SHA: ${{ needs.plan.outputs.target-sha }}
-        run: |
-          set -euo pipefail
-          pages_url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null || true)"
-          export PAGES_URL="$pages_url"
-          uv run --no-sync python - <<'PY'
-          from __future__ import annotations
-
-          import json
-          import os
-          import platform
-          from pathlib import Path
-
-          results = Path(os.environ["ALLURE_RESULTS_DIR"])
-          results.mkdir(parents=True, exist_ok=True)
-          environment = {
-              "Repository": os.environ["GITHUB_REPOSITORY"],
-              "Release": os.environ["TARGET_REF"],
-              "Source-SHA": os.environ["TARGET_SHA"],
-              "Python": platform.python_version(),
-              "OS": platform.platform(),
-              "Evidence-mode": "VCR replay",
-              "Network": "blocked",
-          }
-          results.joinpath("environment.properties").write_text(
-              "".join(f"{key} = {value}\n" for key, value in environment.items()),
-              encoding="utf-8",
-          )
-
-          server_url = os.environ["GITHUB_SERVER_URL"]
-          repository = os.environ["GITHUB_REPOSITORY"]
-          run_id = os.environ["GITHUB_RUN_ID"]
-          run_number = int(os.environ["GITHUB_RUN_NUMBER"])
-          pages_url = os.environ.get("PAGES_URL", "").rstrip("/")
-          executor = {
-              "name": "GitHub Actions",
-              "type": "github",
-              "buildName": f"Run #{run_number}",
-              "buildOrder": run_number,
-              "buildUrl": f"{server_url}/{repository}/actions/runs/{run_id}",
-          }
-          if pages_url:
-              executor["reportUrl"] = f"{pages_url}/specifications/"
-          results.joinpath("executor.json").write_text(
-              json.dumps(executor, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          PY
-
-      - name: Apply living specifications quality gate
-        if: ${{ always() && steps.specifications.outcome != 'skipped' }}
-        env:
-          ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
-          # renovate: datasource=npm depName=allure
-          ALLURE_VERSION: 3.15.0
-        run: >-
-          npx --yes "allure@${ALLURE_VERSION}" quality-gate
-          "$ALLURE_RESULTS_DIR"
-          --cwd "$RUNNER_TEMP"
-          --max-failures 0
-          --min-tests-count 1
-          --success-rate 1
-
-      - name: Build living specifications report
-        if: ${{ steps.specifications.outcome == 'success' }}
-        env:
-          ALLURE_RESULTS_DIR: ${{ runner.temp }}/allure-results
-          ALLURE_REPORT_DIR: ${{ runner.temp }}/allure-report
-          DOCS_OUTPUT_DIR: ${{ runner.temp }}/docs-html
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # renovate: datasource=npm depName=allure
-          ALLURE_VERSION: 3.15.0
-        run: |
-          set -euo pipefail
-          history="$RUNNER_TEMP/specifications-history.jsonl"
-          rm -f "$history"
-          pages_url="$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null || true)"
-          if [[ -n "$pages_url" ]]; then
-            curl -fsSL --max-time 10 \
-              "${pages_url%/}/specifications/history.jsonl?run=$GITHUB_RUN_ID" \
-              -o "$history" 2>/dev/null || rm -f "$history"
-          fi
-
-          rm -rf "$ALLURE_REPORT_DIR"
-          npx --yes "allure@${ALLURE_VERSION}" awesome \
-            "$ALLURE_RESULTS_DIR" \
-            --output "$ALLURE_REPORT_DIR" \
-            --history-path "$history" \
-            --report-name "Living Specifications" \
-            --group-by feature \
-            --hide-labels framework \
-            --hide-labels language \
-            --hide-labels host \
-            --hide-labels thread \
-            --hide-labels tag
-
-          specifications_dir="$DOCS_OUTPUT_DIR/specifications"
-          rm -rf "$specifications_dir"
-          mkdir -p "$specifications_dir"
-          cp -R "$ALLURE_REPORT_DIR"/. "$specifications_dir"/
-          cp "$history" "$specifications_dir/history.jsonl"
-
-      - name: Upload living specifications evidence
-        if: ${{ always() && steps.specifications.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: living-specifications-allure-results-${{ needs.plan.outputs.target-ref }}
-          path: ${{ runner.temp }}/allure-results
-          if-no-files-found: warn
-          retention-days: 30
-
       - name: Write immutable docs source metadata
         env:
           ENVIRONMENT_SHA256: ${{ needs.plan.outputs.environment-sha256 }}
@@ -426,9 +266,6 @@ jobs:
         run: |
           if [[ -z "$ENVIRONMENT_SHA256" ]]; then
             export_groups=(--group docs)
-            if find features -type f -name '*.feature' -print -quit 2>/dev/null | grep -q .; then
-              export_groups+=(--group specifications)
-            fi
             ENVIRONMENT_SHA256="$(
               uv export \
                 --frozen \
@@ -461,9 +298,6 @@ jobs:
               "environment_sha256": os.environ["ENVIRONMENT_SHA256"],
               "built_at": datetime.now(UTC).isoformat(),
               "live_examples": True,
-              "living_specifications": (
-                  Path(os.environ["OUTPUT_DIR"]) / "specifications" / "index.html"
-              ).is_file(),
           }
           target = Path(os.environ["OUTPUT_DIR"]) / "ternforge-docs.json"
           target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
