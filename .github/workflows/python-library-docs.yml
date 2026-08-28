@@ -247,6 +247,7 @@ jobs:
 
           status=0
           uv run --no-sync pytest \
+            -c pyproject.toml \
             -n 2 \
             --junitxml "$EVIDENCE_DIR/pytest-junit.xml" \
             --alluredir "$EVIDENCE_DIR/allure-results" \
