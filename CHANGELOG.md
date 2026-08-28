@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.7.1...v5.7.2) (2026-08-28)
+
+
+### Bug Fixes
+
+* restore hermetic pytest evidence ([#170](https://github.com/betabitplus/ternforge-infra-ci/issues/170)) ([f843293](https://github.com/betabitplus/ternforge-infra-ci/commit/f84329398374ab724c391f77389d1f1b944b89b1))
+
 ## [5.7.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.7.0...v5.7.1) (2026-08-28)
 
 
