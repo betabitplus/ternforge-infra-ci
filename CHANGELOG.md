@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.7.0...v5.7.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* build release dossier on hosted Linux ([#168](https://github.com/betabitplus/ternforge-infra-ci/issues/168)) ([eb80991](https://github.com/betabitplus/ternforge-infra-ci/commit/eb8099118cb571200be0493305bf9815ca500011))
+
 ## [5.7.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.6.2...v5.7.0) (2026-08-28)
 
 
