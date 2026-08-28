@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.7.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.6.2...v5.7.0) (2026-08-28)
+
+
+### Features
+
+* publish release dossier artifact ([#166](https://github.com/betabitplus/ternforge-infra-ci/issues/166)) ([ab31673](https://github.com/betabitplus/ternforge-infra-ci/commit/ab3167399cd7ed418d039f616d3a5f14023871b6))
+
 ## [5.6.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.6.1...v5.6.2) (2026-08-28)
 
 
