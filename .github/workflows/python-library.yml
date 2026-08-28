@@ -141,6 +141,9 @@ jobs:
           uv run --no-sync pytest \
             -c pyproject.toml \
             -n 2 \
+            --record-mode=none \
+            --block-network \
+            --allowed-hosts='localhost,127\.0\.0\.1' \
             --junitxml "$EVIDENCE_DIR/pytest-junit.xml" \
             --alluredir "$EVIDENCE_DIR/allure-results" \
             --cov-context=test || status=$?
