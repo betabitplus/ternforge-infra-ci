@@ -284,14 +284,12 @@ jobs:
       - name: Build live Sphinx-Gallery documentation
         env:
           LOCAL_ENVIRONMENT: ${{ inputs.local-environment }}
-          RELEASE_DOSSIER: ${{ inputs.release-dossier }}
           SPHINX_ENABLE_INTERSPHINX: "1"
         run: |
           set -euo pipefail
           rm -rf docs/_build docs/auto_examples docs/generated docs/sg_execution_times.rst test-results/sphinx-gallery
           output="$RUNNER_TEMP/docs-html"
-          pdf_output="$RUNNER_TEMP/docs-pdf"
-          rm -rf "$output" "$pdf_output"
+          rm -rf "$output"
 
           trace_source="docs/ci-pytest-evidence.rst"
           trace_junit="docs/_traceability/ci-pytest.xml"
@@ -318,26 +316,6 @@ jobs:
             direnv exec . env SPHINX_ENABLE_INTERSPHINX=1 "${build[@]}"
           else
             "${build[@]}"
-          fi
-
-          if [[ "$RELEASE_DOSSIER" == true ]]; then
-            dossier_build=(
-              uv run --no-sync sphinx-build
-              -W
-              --keep-going
-              -D plot_gallery=0
-              -D llms_txt_enabled=0
-              -b simplepdf
-              docs
-              "$pdf_output"
-            )
-            if [[ "$LOCAL_ENVIRONMENT" == true ]]; then
-              direnv exec . env SPHINX_ENABLE_INTERSPHINX=1 "${dossier_build[@]}"
-            else
-              "${dossier_build[@]}"
-            fi
-            test -s "$pdf_output/release-dossier.pdf"
-            cp "$pdf_output/release-dossier.pdf" "$output/release-dossier.pdf"
           fi
 
       - name: Write immutable docs source metadata
@@ -405,15 +383,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload release dossier
-        if: ${{ inputs.release-dossier }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-dossier-${{ needs.plan.outputs.target-ref }}
-          path: ${{ runner.temp }}/docs-html/release-dossier.pdf
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Upload rendered documentation
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -422,10 +391,98 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  dossier:
+    name: release dossier
+    needs: [plan, build]
+    if: ${{ needs.build.result == 'success' && inputs.release-dossier }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact release
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.target-ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version-file: pyproject.toml
+
+      - name: Create read-only GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TERNFORGE_SOURCE_READ_CLIENT_ID }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: read
+
+      - name: Synchronize the locked environment
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: url.https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
+          PYTHON_VERSION: ${{ inputs.python-version }}
+        run: |
+          set -euo pipefail
+          uv sync --locked --all-groups --python "$PYTHON_VERSION"
+
+      - name: Download release test evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-test-evidence-${{ needs.plan.outputs.target-ref }}
+          path: ${{ runner.temp }}/ternforge-evidence
+
+      - name: Build release dossier from exact evidence
+        env:
+          SPHINX_ENABLE_INTERSPHINX: "1"
+        run: |
+          set -euo pipefail
+          rm -rf docs/_build docs/auto_examples docs/generated docs/sg_execution_times.rst
+          pdf_output="$RUNNER_TEMP/docs-pdf"
+          rm -rf "$pdf_output"
+
+          trace_source="docs/ci-pytest-evidence.rst"
+          trace_junit="docs/_traceability/ci-pytest.xml"
+          mkdir -p docs/_traceability
+          cp "$RUNNER_TEMP/ternforge-evidence/pytest-junit.xml" "$trace_junit"
+          cat >"$trace_source" <<'RST'
+          :orphan:
+
+          CI pytest evidence
+          ==================
+
+          .. test-file:: Pytest CI evidence
+             :id: PYTEST_CI_EVIDENCE
+             :file: _traceability/ci-pytest.xml
+             :auto_suites:
+             :auto_cases:
+          RST
+          trap 'rm -f "$trace_source" "$trace_junit"' EXIT
+
+          uv run --no-sync sphinx-build \
+            -W \
+            --keep-going \
+            -D plot_gallery=0 \
+            -D llms_txt_enabled=0 \
+            -b simplepdf \
+            docs \
+            "$pdf_output"
+          test -s "$pdf_output/release-dossier.pdf"
+
+      - name: Upload release dossier
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-dossier-${{ needs.plan.outputs.target-ref }}
+          path: ${{ runner.temp }}/docs-pdf/release-dossier.pdf
+          if-no-files-found: error
+          retention-days: 30
+
   package:
     name: package Pages artifact
-    needs: [plan, build]
-    if: ${{ needs.build.result == 'success' }}
+    needs: [plan, build, dossier]
+    if: ${{ always() && needs.build.result == 'success' && (inputs.release-dossier == false || needs.dossier.result == 'success') }}
     runs-on: ubuntu-24.04
     steps:
       - name: Download rendered documentation
@@ -433,6 +490,17 @@ jobs:
         with:
           name: ternforge-docs-html
           path: ${{ runner.temp }}/docs-html
+
+      - name: Download release dossier
+        if: ${{ inputs.release-dossier }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-dossier-${{ needs.plan.outputs.target-ref }}
+          path: ${{ runner.temp }}/docs-pdf
+
+      - name: Add release dossier to Pages bundle
+        if: ${{ inputs.release-dossier }}
+        run: cp "$RUNNER_TEMP/docs-pdf/release-dossier.pdf" "$RUNNER_TEMP/docs-html/release-dossier.pdf"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
