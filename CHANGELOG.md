@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.6.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.6.1...v5.6.2) (2026-08-28)
+
+
+### Bug Fixes
+
+* pin pytest project config ([#164](https://github.com/betabitplus/ternforge-infra-ci/issues/164)) ([072cf5f](https://github.com/betabitplus/ternforge-infra-ci/commit/072cf5f5f9ad98f9bb310c88c919181157e193fe))
+
 ## [5.6.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.6.0...v5.6.1) (2026-08-27)
 
 
