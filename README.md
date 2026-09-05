@@ -8,22 +8,23 @@ Shared CI and release building blocks for Ternforge repositories.
   quality, security, test, offline documentation, audit, build, metadata,
   manifest, and isolated artifact checks behind the stable `ci / required`
   interface. Its single pytest invocation emits JUnit, raw Allure results, and
-  coverage.py dynamic contexts. The same job imports that JUnit through
-  Sphinx-Test-Reports before the Sphinx-Needs build, so requirements, source
-  implementation markers, and verification evidence are validated as one graph.
-  Raw test evidence is retained for 30 days. Repositories with `docs/conf.py`
-  build Sphinx-Gallery pages with live example execution disabled; repositories
-  not yet migrated to Sphinx skip that step.
+  coverage.py dynamic contexts. The same job hands the retained JUnit to
+  `ternforge-docops build html`, which owns test-evidence ingestion and strict
+  engineering-graph validation. Raw test evidence is retained for 30 days.
+  Repositories with `docs/conf.py` build through DocOps with live examples
+  disabled; repositories without documentation skip that step.
 - `.github/actions/release/action.yml` runs Release Please with a short-lived
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
 - `.github/workflows/python-library-docs.yml` publishes exact release tags to
   GitHub Pages when documentation, examples, requirements, tests, features,
   implementation source, or the full locked evidence/docs environment changed
-  since the last published site. The release build runs pytest once, imports its
-  JUnit through Sphinx-Test-Reports, scans source implementation markers through
-  Sphinx-CodeLinks, and validates the same Sphinx-Needs graph before publishing.
-  Raw pytest, Allure, and coverage-context evidence is retained for 30 days.
+  since the last published site. The release build runs pytest once and passes
+  the resulting JUnit and Allure evidence to `ternforge-docops build portal`,
+  which owns live documentation execution, source/evidence ingestion, graph
+  validation, and the published Allure perspectives. Release dossiers are built
+  through `ternforge-docops build dossier`. Raw pytest, Allure, and
+  coverage-context evidence is retained for 30 days.
   `manual` mode reports stale docs on a release and waits for an explicit live
   run; `release` mode builds automatically.
 
