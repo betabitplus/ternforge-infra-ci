@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.8.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.7.2...v5.8.0) (2026-09-05)
+
+
+### Features
+
+* delegate documentation builds to DocOps ([#176](https://github.com/betabitplus/ternforge-infra-ci/issues/176)) ([2e0e5da](https://github.com/betabitplus/ternforge-infra-ci/commit/2e0e5da2daa376e91c2b960c0063d0d0746cdf8f))
+
 ## [5.7.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.7.1...v5.7.2) (2026-08-28)
 
 
