@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.8.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.0...v5.8.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* align self release caller ([#178](https://github.com/betabitplus/ternforge-infra-ci/issues/178)) ([d3c7b17](https://github.com/betabitplus/ternforge-infra-ci/commit/d3c7b1774bd83f29123d42794f67934f46885277))
+
 ## [5.8.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.7.2...v5.8.0) (2026-09-05)
 
 
