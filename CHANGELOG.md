@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.8.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.1...v5.8.2) (2026-09-10)
+
+
+### Bug Fixes
+
+* build CI docs from complete evidence ([#180](https://github.com/betabitplus/ternforge-infra-ci/issues/180)) ([14169bc](https://github.com/betabitplus/ternforge-infra-ci/commit/14169bc2c57bec10dbb4e2032fd2279769641a21))
+
 ## [5.8.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.0...v5.8.1) (2026-09-07)
 
 
