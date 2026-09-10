@@ -22,8 +22,9 @@ Shared CI and release building blocks for Ternforge repositories.
   since the last published site. The release build runs pytest once and passes
   the resulting JUnit and Allure evidence to `ternforge-docops build portal`,
   which owns live documentation execution, source/evidence ingestion, graph
-  validation, and the published Allure perspectives. Release dossiers are built
-  through `ternforge-docops build dossier`. Raw pytest, Allure, and
+  validation, and the published Allure perspectives. Release dossiers hand the
+  same JUnit and Allure evidence to `ternforge-docops build dossier`. Raw pytest,
+  Allure, and
   coverage-context evidence is retained for 30 days.
   `manual` mode reports stale docs on a release and waits for an explicit live
   run; `release` mode builds automatically.
