@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.8.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.2...v5.8.3) (2026-09-10)
+
+
+### Bug Fixes
+
+* pass allure evidence to release dossier ([#183](https://github.com/betabitplus/ternforge-infra-ci/issues/183)) ([db99c99](https://github.com/betabitplus/ternforge-infra-ci/commit/db99c99fd0757e6843df8ab35caa1fcf99113583))
+
 ## [5.8.2](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.1...v5.8.2) (2026-09-10)
 
 
