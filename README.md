@@ -8,11 +8,11 @@ Shared CI and release building blocks for Ternforge repositories.
   quality, security, test, offline documentation, audit, build, metadata,
   manifest, and isolated artifact checks behind the stable `ci / required`
   interface. Its single pytest invocation emits JUnit, raw Allure results, and
-  coverage.py dynamic contexts. The same job hands the retained JUnit to
-  `ternforge-docops build html`, which owns test-evidence ingestion and strict
-  engineering-graph validation. Raw test evidence is retained for 30 days.
-  Repositories with `docs/conf.py` build through DocOps with live examples
-  disabled; repositories without documentation skip that step.
+  coverage.py dynamic contexts. The same job hands JUnit and Allure evidence to
+  `ternforge-docops build portal`, which owns test-evidence ingestion, Living
+  Specifications composition, and strict engineering-graph validation. Live
+  examples remain disabled in this CI build. Raw test evidence is retained for 30
+  days. Repositories without `docs/conf.py` skip the documentation step.
 - `.github/actions/release/action.yml` runs Release Please with a short-lived
   repository-scoped GitHub App token and optionally synchronizes a Python
   `uv.lock` in the Release PR branch.
