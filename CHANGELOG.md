@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.9.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.3...v5.9.0) (2026-09-12)
+
+
+### Features
+
+* pass coverage evidence to DocOps ([#185](https://github.com/betabitplus/ternforge-infra-ci/issues/185)) ([d0b85c2](https://github.com/betabitplus/ternforge-infra-ci/commit/d0b85c224ae05297cfd389a22bc8f5433892f4f1))
+
 ## [5.8.3](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.2...v5.8.3) (2026-09-10)
 
 
