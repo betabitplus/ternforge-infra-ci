@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.9.1](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.9.0...v5.9.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* decouple docs evidence from live build ([#187](https://github.com/betabitplus/ternforge-infra-ci/issues/187)) ([195bfad](https://github.com/betabitplus/ternforge-infra-ci/commit/195bfad3606ae647363ea867f9a6bd56b276b778))
+
 ## [5.9.0](https://github.com/betabitplus/ternforge-infra-ci/compare/v5.8.3...v5.9.0) (2026-09-12)
 
 
