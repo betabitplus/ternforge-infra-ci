@@ -297,6 +297,7 @@ jobs:
             uv run --no-sync ternforge-docops build portal
             --junit "$RUNNER_TEMP/ternforge-evidence/pytest-junit.xml"
             --allure-results "$RUNNER_TEMP/ternforge-evidence/allure-results"
+            --coverage "$RUNNER_TEMP/ternforge-evidence/coverage.json"
             --output "$output"
             --live-examples
           )
@@ -435,6 +436,7 @@ jobs:
           uv run --no-sync ternforge-docops build dossier \
             --junit "$RUNNER_TEMP/ternforge-evidence/pytest-junit.xml" \
             --allure-results "$RUNNER_TEMP/ternforge-evidence/allure-results" \
+            --coverage "$RUNNER_TEMP/ternforge-evidence/coverage.json" \
             --output "$pdf_output"
           test -s "$pdf_output/release-dossier.pdf"
 
