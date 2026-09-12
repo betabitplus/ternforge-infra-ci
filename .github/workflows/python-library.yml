@@ -178,6 +178,7 @@ jobs:
           uv run --no-sync ternforge-docops build portal \
             --junit "$RUNNER_TEMP/ternforge-evidence/pytest-junit.xml" \
             --allure-results "$RUNNER_TEMP/ternforge-evidence/allure-results" \
+            --coverage "$RUNNER_TEMP/ternforge-evidence/coverage.json" \
             --output "$RUNNER_TEMP/docs-html"
 
       - name: Audit frozen runtime dependencies
