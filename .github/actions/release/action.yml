@@ -24,7 +24,7 @@ runs:
   steps:
     - name: Create current-repository release token
       id: app-token
-      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
       with:
         client-id: ${{ inputs.app-client-id }}
         private-key: ${{ inputs.app-private-key }}
@@ -57,7 +57,7 @@ runs:
     - name: Create source-read token
       id: source-read-token
       if: inputs.synchronize-python-lock == 'true' && steps.release-please.outputs.prs_created == 'true'
-      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
       with:
         client-id: ${{ inputs.source-read-client-id }}
         private-key: ${{ inputs.source-read-private-key }}
@@ -94,7 +94,7 @@ runs:
     - name: Create update-dispatch token
       id: dispatch-token
       if: steps.release-please.outputs.release_created == 'true'
-      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
       with:
         client-id: ${{ inputs.app-client-id }}
         private-key: ${{ inputs.app-private-key }}
